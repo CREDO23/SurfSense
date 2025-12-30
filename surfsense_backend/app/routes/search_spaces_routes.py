@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.config import config
 from app.db import (
@@ -128,6 +129,7 @@ async def read_search_spaces(
             # Return only search spaces where user is the original creator (user_id)
             result = await session.execute(
                 select(SearchSpace)
+                .options(selectinload(SearchSpace.memberships))
                 .filter(SearchSpace.user_id == user.id)
                 .offset(skip)
                 .limit(limit)
@@ -136,6 +138,7 @@ async def read_search_spaces(
             # Return all search spaces the user has membership in
             result = await session.execute(
                 select(SearchSpace)
+                .options(selectinload(SearchSpace.memberships))
                 .join(SearchSpaceMembership)
                 .filter(SearchSpaceMembership.user_id == user.id)
                 .offset(skip)
@@ -147,23 +150,14 @@ async def read_search_spaces(
         # Get member counts and ownership info for each search space
         search_spaces_with_stats = []
         for space in search_spaces:
-            # Get member count
-            count_result = await session.execute(
-                select(func.count(SearchSpaceMembership.id)).filter(
-                    SearchSpaceMembership.search_space_id == space.id
-                )
-            )
-            member_count = count_result.scalar() or 1
+            # Use preloaded memberships instead of separate queries
+            member_count = len(space.memberships) if space.memberships else 1
 
-            # Check if current user is owner
-            ownership_result = await session.execute(
-                select(SearchSpaceMembership).filter(
-                    SearchSpaceMembership.search_space_id == space.id,
-                    SearchSpaceMembership.user_id == user.id,
-                    SearchSpaceMembership.is_owner == True,  # noqa: E712
-                )
+            # Check if current user is owner from loaded memberships
+            is_owner = any(
+                m.user_id == user.id and m.is_owner
+                for m in (space.memberships or [])
             )
-            is_owner = ownership_result.scalars().first() is not None
 
             search_spaces_with_stats.append(
                 SearchSpaceWithStats(
