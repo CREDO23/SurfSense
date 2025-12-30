@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import (
+from app.models import (
     SearchSourceConnector,
     SearchSourceConnectorType,
     User,

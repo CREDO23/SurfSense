@@ -36,7 +36,7 @@ class ChucksHybridSearchRetriever:
         from sqlalchemy.orm import joinedload
 
         from app.config import config
-        from app.db import Chunk, Document
+        from app.models import Chunk, Document
 
         # Get embedding for the query
         embedding_model = config.embedding_model_instance
@@ -89,7 +89,7 @@ class ChucksHybridSearchRetriever:
         from sqlalchemy import func, select
         from sqlalchemy.orm import joinedload
 
-        from app.db import Chunk, Document
+        from app.models import Chunk, Document
 
         # Create tsvector and tsquery for PostgreSQL full-text search
         tsvector = func.to_tsvector("english", Chunk.content)
@@ -155,7 +155,7 @@ class ChucksHybridSearchRetriever:
         from sqlalchemy.orm import joinedload
 
         from app.config import config
-        from app.db import Chunk, Document, DocumentType
+        from app.models import Chunk, Document, DocumentType
 
         # Get embedding for the query
         embedding_model = config.embedding_model_instance

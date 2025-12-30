@@ -12,7 +12,7 @@ from app.agents.podcaster.graph import graph as podcaster_graph
 from app.agents.podcaster.state import State as PodcasterState
 from app.celery_app import celery_app
 from app.config import config
-from app.db import Podcast
+from app.models import Podcast
 
 logger = logging.getLogger(__name__)
 

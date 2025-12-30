@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.connectors.github_connector import GitHubConnector
-from app.db import User
+from app.models import User
 from app.users import current_active_user
 
 logger = logging.getLogger(__name__)

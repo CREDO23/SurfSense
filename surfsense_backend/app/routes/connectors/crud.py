@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.connectors.github_connector import GitHubConnector
-from app.db import (
+from app.models import (
     Permission,
     SearchSourceConnector,
     User,

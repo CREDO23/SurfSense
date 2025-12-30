@@ -10,7 +10,7 @@ from sqlalchemy.pool import NullPool
 
 from app.celery_app import celery_app
 from app.config import config
-from app.db import Document
+from app.models import Document
 from app.services.llm_service import get_user_long_context_llm
 from app.services.task_logging_service import TaskLoggingService
 from app.utils.blocknote_converter import convert_blocknote_to_markdown
@@ -110,7 +110,7 @@ async def _reindex_document(document_id: int, user_id: str):
                 return
 
             # 2. Delete old chunks explicitly
-            from app.db import Chunk
+            from app.models import Chunk
 
             await session.execute(delete(Chunk).where(Chunk.document_id == document_id))
             await session.flush()  # Ensure old chunks are deleted

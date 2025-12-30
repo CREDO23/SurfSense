@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 
 from app.celery_app import celery_app
 from app.config import config
-from app.db import Document
+from app.models import Document
 from app.utils.blocknote_converter import convert_markdown_to_blocknote
 
 logger = logging.getLogger(__name__)

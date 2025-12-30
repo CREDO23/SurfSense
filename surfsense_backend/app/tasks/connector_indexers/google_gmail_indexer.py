@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
 from app.connectors.google_gmail_connector import GoogleGmailConnector
-from app.db import (
+from app.models import (
     Document,
     DocumentType,
     SearchSourceConnectorType,

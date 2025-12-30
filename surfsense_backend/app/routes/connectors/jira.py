@@ -6,7 +6,7 @@ import logging
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import async_session_maker
+from app.models import async_session_maker
 from app.routes.connectors._shared import update_connector_last_indexed
 from app.tasks.connector_indexers import index_jira_issues
 

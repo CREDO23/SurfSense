@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-from app.db import LogLevel, LogStatus
+from app.models import LogLevel, LogStatus
 
 from .base import IDModel, TimestampModel
 

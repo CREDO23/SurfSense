@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.connectors.elasticsearch_connector import ElasticsearchConnector
-from app.db import Document, DocumentType, SearchSourceConnector
+from app.models import Document, DocumentType, SearchSourceConnector
 from app.services.task_logging_service import TaskLoggingService
 from app.utils.document_converters import (
     create_document_chunks,

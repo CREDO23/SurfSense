@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db import Document, DocumentType, Permission, User, get_async_session
+from app.models import Document, DocumentType, Permission, User, get_async_session
 from app.users import current_active_user
 from app.utils.rbac import check_permission
 

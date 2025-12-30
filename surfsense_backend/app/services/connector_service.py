@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from tavily import TavilyClient
 
-from app.db import (
+from app.models import (
     Chunk,
     Document,
     SearchSourceConnector,

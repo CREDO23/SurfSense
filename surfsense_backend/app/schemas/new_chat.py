@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.db import NewChatMessageRole
+from app.models import NewChatMessageRole
 
 from .base import IDModel, TimestampModel
 

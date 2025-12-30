@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 
 from app.celery_app import celery_app
 from app.config import config
-from app.db import SearchSourceConnector, SearchSourceConnectorType
+from app.models import SearchSourceConnector, SearchSourceConnectorType
 
 logger = logging.getLogger(__name__)
 

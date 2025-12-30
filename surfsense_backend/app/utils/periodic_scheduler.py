@@ -12,7 +12,7 @@ This avoids RedBeat's limitation where new schedules aren't discovered without r
 
 import logging
 
-from app.db import SearchSourceConnectorType
+from app.models import SearchSourceConnectorType
 
 logger = logging.getLogger(__name__)
 

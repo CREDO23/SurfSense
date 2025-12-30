@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import Document, DocumentType
+from app.models import Document, DocumentType
 from app.schemas import ExtensionDocumentContent
 from app.services.llm_service import get_user_long_context_llm
 from app.services.task_logging_service import TaskLoggingService

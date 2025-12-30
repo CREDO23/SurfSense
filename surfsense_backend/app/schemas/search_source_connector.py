@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from app.db import SearchSourceConnectorType
+from app.models import SearchSourceConnectorType
 from app.utils.validators import validate_connector_config
 
 from .base import IDModel, TimestampModel

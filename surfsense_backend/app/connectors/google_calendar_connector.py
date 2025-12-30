@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.db import (
+from app.models import (
     SearchSourceConnector,
     SearchSourceConnectorType,
 )

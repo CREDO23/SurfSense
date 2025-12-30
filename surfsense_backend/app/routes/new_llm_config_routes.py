@@ -15,7 +15,7 @@ from sqlalchemy.future import select
 
 from app.agents.new_chat.system_prompt import get_default_system_instructions
 from app.config import config
-from app.db import (
+from app.models import (
     NewLLMConfig,
     Permission,
     User,

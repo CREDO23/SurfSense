@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import SearchSourceConnector, User, get_async_session
+from app.models import SearchSourceConnector, User, get_async_session
 from app.users import current_active_user
 from app.utils.rbac import check_permission
 

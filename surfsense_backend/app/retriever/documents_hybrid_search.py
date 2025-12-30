@@ -36,7 +36,7 @@ class DocumentHybridSearchRetriever:
         from sqlalchemy.orm import joinedload
 
         from app.config import config
-        from app.db import Document
+        from app.models import Document
 
         # Get embedding for the query
         embedding_model = config.embedding_model_instance
@@ -90,7 +90,7 @@ class DocumentHybridSearchRetriever:
         from sqlalchemy import func, select
         from sqlalchemy.orm import joinedload
 
-        from app.db import Document
+        from app.models import Document
 
         # Create tsvector and tsquery for PostgreSQL full-text search
         tsvector = func.to_tsvector("english", Document.content)
@@ -149,7 +149,7 @@ class DocumentHybridSearchRetriever:
         from sqlalchemy.orm import joinedload
 
         from app.config import config
-        from app.db import Chunk, Document, DocumentType
+        from app.models import Chunk, Document, DocumentType
 
         # Get embedding for the query
         embedding_model = config.embedding_model_instance

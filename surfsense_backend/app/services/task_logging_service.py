@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import Log, LogLevel, LogStatus
+from app.models import Log, LogLevel, LogStatus
 
 logger = logging.getLogger(__name__)
 

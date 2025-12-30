@@ -8,7 +8,7 @@ from langchain_community.document_transformers import MarkdownifyTransformer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import Document
+from app.models import Document
 
 # Initialize markdown transformer
 md = MarkdownifyTransformer()

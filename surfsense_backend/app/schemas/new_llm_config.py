@@ -12,7 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.db import LiteLLMProvider
+from app.models import LiteLLMProvider
 
 
 class NewLLMConfigBase(BaseModel):

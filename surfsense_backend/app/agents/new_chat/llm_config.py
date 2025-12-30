@@ -192,7 +192,7 @@ async def load_new_llm_config_from_db(
         AgentConfig instance or None if not found
     """
     # Import here to avoid circular imports
-    from app.db import NewLLMConfig
+    from app.models import NewLLMConfig
 
     try:
         result = await session.execute(
@@ -230,7 +230,7 @@ async def load_agent_llm_config_for_search_space(
         AgentConfig instance or None if not found
     """
     # Import here to avoid circular imports
-    from app.db import SearchSpace
+    from app.models import SearchSpace
 
     try:
         # Get the search space to check its agent_llm_id preference

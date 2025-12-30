@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.config import config
-from app.db import (
+from app.models import (
     SearchSourceConnector,
     SearchSourceConnectorType,
     User,

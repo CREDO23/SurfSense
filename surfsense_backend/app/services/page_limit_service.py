@@ -49,7 +49,7 @@ class PageLimitService:
         Raises:
             PageLimitExceededError: If user would exceed their page limit
         """
-        from app.db import User
+        from app.models import User
 
         # Get user's current page usage
         result = await self.session.execute(
@@ -94,7 +94,7 @@ class PageLimitService:
         Raises:
             PageLimitExceededError: If adding pages would exceed limit and allow_exceed is False
         """
-        from app.db import User
+        from app.models import User
 
         # Get user
         result = await self.session.execute(select(User).where(User.id == user_id))
@@ -132,7 +132,7 @@ class PageLimitService:
         Returns:
             Tuple of (pages_used, pages_limit)
         """
-        from app.db import User
+        from app.models import User
 
         result = await self.session.execute(
             select(User.pages_used, User.pages_limit).where(User.id == user_id)

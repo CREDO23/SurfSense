@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.config import config
-from app.db import (
+from app.models import (
     NewLLMConfig,
     Permission,
     SearchSpace,

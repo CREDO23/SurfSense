@@ -3,7 +3,7 @@ import hashlib
 from litellm import get_model_info, token_counter
 
 from app.config import config
-from app.db import Chunk, DocumentType
+from app.models import Chunk, DocumentType
 from app.prompts import SUMMARY_PROMPT_TEMPLATE
 
 

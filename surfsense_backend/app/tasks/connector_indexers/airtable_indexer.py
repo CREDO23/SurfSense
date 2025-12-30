@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
 from app.connectors.airtable_connector import AirtableConnector
-from app.db import Document, DocumentType, SearchSourceConnectorType
+from app.models import Document, DocumentType, SearchSourceConnectorType
 from app.routes.airtable_add_connector_route import refresh_airtable_token
 from app.schemas.airtable_auth_credentials import AirtableAuthCredentialsBase
 from app.services.llm_service import get_user_long_context_llm

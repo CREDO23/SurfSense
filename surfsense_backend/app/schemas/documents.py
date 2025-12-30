@@ -3,7 +3,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-from app.db import DocumentType
+from app.models import DocumentType
 
 from .chunks import ChunkRead
 

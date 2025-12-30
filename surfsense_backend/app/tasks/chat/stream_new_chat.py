@@ -25,7 +25,7 @@ from app.agents.new_chat.llm_config import (
     load_agent_config,
     load_llm_config_from_yaml,
 )
-from app.db import Document
+from app.models import Document
 from app.schemas.new_chat import ChatAttachment
 from app.services.connector_service import ConnectorService
 from app.services.new_streaming_service import VercelStreamingService
@@ -171,7 +171,7 @@ async def stream_new_chat(
         connector_service = ConnectorService(session, search_space_id=search_space_id)
 
         # Get Firecrawl API key from webcrawler connector if configured
-        from app.db import SearchSourceConnectorType
+        from app.models import SearchSourceConnectorType
 
         firecrawl_api_key = None
         webcrawler_connector = await connector_service.get_connector_by_type(

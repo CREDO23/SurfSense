@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.config import config
-from app.db import NewLLMConfig, SearchSpace
+from app.models import NewLLMConfig, SearchSpace
 
 # Configure litellm to automatically drop unsupported parameters
 litellm.drop_params = True

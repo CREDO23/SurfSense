@@ -12,7 +12,7 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from pydantic import BaseModel
 
 from app.config import config
-from app.db import User, get_user_db
+from app.models import User, get_user_db
 
 
 class BearerResponse(BaseModel):

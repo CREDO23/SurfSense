@@ -5,7 +5,7 @@ from sqlalchemy import and_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import (
+from app.models import (
     Log,
     LogLevel,
     LogStatus,

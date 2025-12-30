@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import (
+from app.models import (
     Document,
     SearchSourceConnector,
     SearchSourceConnectorType,
