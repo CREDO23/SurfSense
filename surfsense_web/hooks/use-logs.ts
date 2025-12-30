@@ -51,7 +51,11 @@ export interface LogSummary {
 	}>;
 }
 
-export function useLogs(searchSpaceId?: number, filters: LogFilters = {}) {
+export function useLogs(
+	searchSpaceId?: number,
+	filters: LogFilters = {},
+	pagination?: { skip: number; limit: number }
+) {
 	// Memoize filters to prevent infinite re-renders
 	const memoizedFilters = useMemo(() => filters, [JSON.stringify(filters)]);
 
@@ -93,16 +97,16 @@ export function useLogs(searchSpaceId?: number, filters: LogFilters = {}) {
 	} = useQuery({
 		queryKey: cacheKeys.logs.withQueryParams({
 			search_space_id: searchSpaceId,
-			skip: 0,
-			limit: 5,
+			skip: pagination?.skip ?? 0,
+			limit: pagination?.limit ?? 20,
 			...buildQueryParams(filters ?? {}),
 		}),
 		queryFn: () =>
 			logsApiService.getLogs({
 				queryParams: {
 					search_space_id: searchSpaceId,
-					skip: 0,
-					limit: 5,
+					skip: pagination?.skip ?? 0,
+					limit: pagination?.limit ?? 20,
 					...buildQueryParams(filters ?? {}),
 				},
 			}),
