@@ -1,15 +1,15 @@
 /**
  * Regression tests for useLogs hook
- * 
+ *
  * Critical Bug Fixed: Logs pagination was hardcoded to limit=5
  * This test ensures pagination works correctly with configurable limits.
  */
+import React, { ReactNode } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useLogs } from '@/hooks/use-logs';
 import { logsApiService } from '@/lib/apis/logs-api.service';
-import { ReactNode } from 'react';
 
 // Mock the logs API service
 vi.mock('@/lib/apis/logs-api.service', () => ({

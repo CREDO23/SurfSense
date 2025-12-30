@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ jsxRuntime: 'automatic' })],
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
