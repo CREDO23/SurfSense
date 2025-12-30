@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-	Crown,
-	Loader2,
-	MoreHorizontal,
-	Search,
-	ShieldCheck,
-	Trash2,
-	User,
-	UserMinus,
-} from "lucide-react";
+import { useState, useMemo } from "react";
 import { motion } from "motion/react";
-import { toast } from "sonner";
+import {
+	Loader2,
+	Search,
+	Users,
+	User,
+	Crown,
+	Calendar,
+	UserMinus,
+	Shield,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -24,17 +26,6 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -50,7 +41,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { Membership, Role } from "@/contracts/types/team";
+import type { Membership, Role } from "@/contracts/types/members.types";
 
 interface MembersTabProps {
 	members: Membership[];
@@ -90,22 +81,6 @@ export function MembersTab({
 		);
 	}
 
-		if (!searchQuery) return members;
-		const query = searchQuery.toLowerCase();
-		return members.filter(
-			(m) =>
-				m.user_email?.toLowerCase().includes(query) || m.role?.name.toLowerCase().includes(query)
-		);
-	}, [members, searchQuery]);
-
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<Loader2 className="h-8 w-8 text-primary animate-spin" />
-			</div>
-		);
-	}
-
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 10 }}
@@ -113,7 +88,6 @@ export function MembersTab({
 			exit={{ opacity: 0, y: -10 }}
 			className="space-y-4"
 		>
-			{/* Search */}
 			<div className="flex items-center gap-4">
 				<div className="relative flex-1 max-w-sm">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -126,7 +100,6 @@ export function MembersTab({
 				</div>
 			</div>
 
-			{/* Members List */}
 			<div className="rounded-lg border bg-card overflow-x-auto">
 				<Table>
 					<TableHeader>
