@@ -18,8 +18,8 @@ from .new_llm_config_routes import router as new_llm_config_router
 from .notes_routes import router as notes_router
 from .podcasts_routes import router as podcasts_router
 from .rbac_routes import router as rbac_router
-from .search_source_connectors_routes import router as search_source_connectors_router
 from .search_spaces_routes import router as search_spaces_router
+from app.routes.connectors import router as connectors_router
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ router.include_router(documents_router)
 router.include_router(notes_router)
 router.include_router(new_chat_router)  # Chat with assistant-ui persistence
 router.include_router(podcasts_router)  # Podcast task status and audio
-router.include_router(search_source_connectors_router)
+router.include_router(connectors_router)  # Modular connector routes (CRUD + indexing)
 router.include_router(google_calendar_add_connector_router)
 router.include_router(google_gmail_add_connector_router)
 router.include_router(airtable_add_connector_router)

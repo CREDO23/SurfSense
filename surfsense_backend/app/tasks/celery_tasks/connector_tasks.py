@@ -58,7 +58,7 @@ async def _index_slack_messages(
     end_date: str,
 ):
     """Index Slack messages with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.slack import (
         run_slack_indexing,
     )
 
@@ -101,7 +101,7 @@ async def _index_notion_pages(
     end_date: str,
 ):
     """Index Notion pages with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.notion import (
         run_notion_indexing,
     )
 
@@ -144,7 +144,7 @@ async def _index_github_repos(
     end_date: str,
 ):
     """Index GitHub repositories with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.github import (
         run_github_indexing,
     )
 
@@ -187,7 +187,7 @@ async def _index_linear_issues(
     end_date: str,
 ):
     """Index Linear issues with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.linear import (
         run_linear_indexing,
     )
 
@@ -230,7 +230,7 @@ async def _index_jira_issues(
     end_date: str,
 ):
     """Index Jira issues with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.jira import (
         run_jira_indexing,
     )
 
@@ -273,7 +273,7 @@ async def _index_confluence_pages(
     end_date: str,
 ):
     """Index Confluence pages with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.confluence import (
         run_confluence_indexing,
     )
 
@@ -316,7 +316,7 @@ async def _index_clickup_tasks(
     end_date: str,
 ):
     """Index ClickUp tasks with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.clickup import (
         run_clickup_indexing,
     )
 
@@ -359,7 +359,7 @@ async def _index_google_calendar_events(
     end_date: str,
 ):
     """Index Google Calendar events with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.google_calendar import (
         run_google_calendar_indexing,
     )
 
@@ -402,7 +402,7 @@ async def _index_airtable_records(
     end_date: str,
 ):
     """Index Airtable records with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.airtable import (
         run_airtable_indexing,
     )
 
@@ -447,7 +447,7 @@ async def _index_google_gmail_messages(
     """Index Google Gmail messages with new session."""
     from datetime import datetime
 
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.google_gmail import (
         run_google_gmail_indexing,
     )
 
@@ -506,7 +506,7 @@ async def _index_discord_messages(
     end_date: str,
 ):
     """Index Discord messages with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.discord import (
         run_discord_indexing,
     )
 
@@ -549,7 +549,7 @@ async def _index_luma_events(
     end_date: str,
 ):
     """Index Luma events with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.luma import (
         run_luma_indexing,
     )
 
@@ -592,7 +592,7 @@ async def _index_elasticsearch_documents(
     end_date: str,
 ):
     """Index Elasticsearch documents with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.elasticsearch import (
         run_elasticsearch_indexing,
     )
 
@@ -635,7 +635,7 @@ async def _index_crawled_urls(
     end_date: str,
 ):
     """Index Web page Urls with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.web_pages import (
         run_web_page_indexing,
     )
 
@@ -678,7 +678,7 @@ async def _index_bookstack_pages(
     end_date: str,
 ):
     """Index BookStack pages with new session."""
-    from app.routes.search_source_connectors_routes import (
+    from app.routes.connectors.bookstack import (
         run_bookstack_indexing,
     )
 

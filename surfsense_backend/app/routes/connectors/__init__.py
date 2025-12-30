@@ -8,6 +8,7 @@ from app.routes.connectors import (
     bookstack,
     clickup,
     confluence,
+    crud,
     discord,
     elasticsearch,
     github,
@@ -23,6 +24,10 @@ from app.routes.connectors import (
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
 
+# CRUD operations
+router.include_router(crud.router)
+
+# Connector-specific indexing endpoints
 router.include_router(github.router)
 router.include_router(slack.router)
 router.include_router(notion.router)
