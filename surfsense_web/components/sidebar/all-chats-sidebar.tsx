@@ -1,17 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import {
-	ArchiveIcon,
-	Loader2,
-	MessageCircleMore,
-	MoreHorizontal,
-	RotateCcwIcon,
-	Search,
-	Trash2,
-	X,
-} from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -19,15 +9,10 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChatArchiveTabs } from "@/components/sidebar/chat-archive-tabs";
+import { ChatEmptyStates } from "@/components/sidebar/chat-empty-states";
+import { ChatSearchHeader } from "@/components/sidebar/chat-search-header";
+import { ChatThreadItem } from "@/components/sidebar/chat-thread-item";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
 	deleteThread,
@@ -36,7 +21,6 @@ import {
 	type ThreadListItem,
 	updateThread,
 } from "@/lib/chat/thread-persistence";
-import { cn } from "@/lib/utils";
 
 interface AllChatsSidebarProps {
 	open: boolean;
@@ -249,59 +233,22 @@ export function AllChatsSidebar({
 								</Button>
 							</div>
 
-							{/* Search Input */}
-							<div className="relative">
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								<Input
-									type="text"
-									placeholder={t("search_chats") || "Search chats..."}
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pl-9 pr-8 h-9"
-								/>
-								{searchQuery && (
-									<Button
-										variant="ghost"
-										size="icon"
-										className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
-										onClick={handleClearSearch}
-									>
-										<X className="h-3.5 w-3.5" />
-										<span className="sr-only">{t("clear_search") || "Clear search"}</span>
-									</Button>
-								)}
-							</div>
+							<ChatSearchHeader
+								searchQuery={searchQuery}
+								onSearchChange={setSearchQuery}
+								onClearSearch={handleClearSearch}
+								placeholder={t("search_chats") || "Search chats..."}
+								clearLabel={t("clear_search") || "Clear search"}
+							/>
 						</div>
 
-						{/* Tab toggle for active/archived (only show when not searching) */}
-						{!isSearchMode && (
-							<div className="flex-shrink-0 flex border-b mx-4">
-								<button
-									type="button"
-									onClick={() => setShowArchived(false)}
-									className={cn(
-										"flex-1 px-3 py-2 text-center text-xs font-medium transition-colors",
-										!showArchived
-											? "border-b-2 border-primary text-primary"
-											: "text-muted-foreground hover:text-foreground"
-									)}
-								>
-									Active ({activeCount})
-								</button>
-								<button
-									type="button"
-									onClick={() => setShowArchived(true)}
-									className={cn(
-										"flex-1 px-3 py-2 text-center text-xs font-medium transition-colors",
-										showArchived
-											? "border-b-2 border-primary text-primary"
-											: "text-muted-foreground hover:text-foreground"
-									)}
-								>
-									Archived ({archivedCount})
-								</button>
-							</div>
-						)}
+						<ChatArchiveTabs
+							showArchived={showArchived}
+							onShowArchivedChange={setShowArchived}
+							activeCount={activeCount}
+							archivedCount={archivedCount}
+							isSearchMode={isSearchMode}
+						/>
 
 						{/* Scrollable Content */}
 						<div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
@@ -318,120 +265,41 @@ export function AllChatsSidebar({
 									{threads.map((thread) => {
 										const isDeleting = deletingThreadId === thread.id;
 										const isArchiving = archivingThreadId === thread.id;
-										const isBusy = isDeleting || isArchiving;
 										const isActive = currentChatId === thread.id;
 
 										return (
-											<div
+											<ChatThreadItem
 												key={thread.id}
-												className={cn(
-													"group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-													"hover:bg-accent hover:text-accent-foreground",
-													"transition-colors cursor-pointer",
-													isActive && "bg-accent text-accent-foreground",
-													isBusy && "opacity-50 pointer-events-none"
-												)}
-											>
-												{/* Main clickable area for navigation */}
-												<Tooltip>
-													<TooltipTrigger asChild>
-														<button
-															type="button"
-															onClick={() => handleThreadClick(thread.id)}
-															disabled={isBusy}
-															className="flex items-center gap-2 flex-1 min-w-0 text-left overflow-hidden"
-														>
-															<MessageCircleMore className="h-4 w-4 shrink-0 text-muted-foreground" />
-															<span className="truncate">{thread.title || "New Chat"}</span>
-														</button>
-													</TooltipTrigger>
-													<TooltipContent side="bottom" align="start">
-														<p>
-															{t("updated") || "Updated"}:{" "}
-															{format(new Date(thread.updatedAt), "MMM d, yyyy 'at' h:mm a")}
-														</p>
-													</TooltipContent>
-												</Tooltip>
-
-												{/* Actions dropdown */}
-												<DropdownMenu
-													open={openDropdownId === thread.id}
-													onOpenChange={(isOpen) => setOpenDropdownId(isOpen ? thread.id : null)}
-												>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className={cn(
-																"h-6 w-6 shrink-0",
-																"md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100",
-																"transition-opacity"
-															)}
-															disabled={isBusy}
-														>
-															{isDeleting ? (
-																<Loader2 className="h-3.5 w-3.5 animate-spin" />
-															) : (
-																<MoreHorizontal className="h-3.5 w-3.5" />
-															)}
-															<span className="sr-only">{t("more_options") || "More options"}</span>
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end" className="w-40 z-[80]">
-														<DropdownMenuItem
-															onClick={() => handleToggleArchive(thread.id, thread.archived)}
-															disabled={isArchiving}
-														>
-															{thread.archived ? (
-																<>
-																	<RotateCcwIcon className="mr-2 h-4 w-4" />
-																	<span>{t("unarchive") || "Restore"}</span>
-																</>
-															) : (
-																<>
-																	<ArchiveIcon className="mr-2 h-4 w-4" />
-																	<span>{t("archive") || "Archive"}</span>
-																</>
-															)}
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() => handleDeleteThread(thread.id)}
-															className="text-destructive focus:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4" />
-															<span>{t("delete") || "Delete"}</span>
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</div>
+												thread={thread}
+												isActive={isActive}
+												isDeleting={isDeleting}
+												isArchiving={isArchiving}
+												onThreadClick={handleThreadClick}
+												onDeleteThread={handleDeleteThread}
+												onToggleArchive={handleToggleArchive}
+												openDropdownId={openDropdownId}
+												onOpenDropdownChange={setOpenDropdownId}
+												updatedLabel={t("updated") || "Updated"}
+												moreOptionsLabel={t("more_options") || "More options"}
+												unarchiveLabel={t("unarchive") || "Restore"}
+												archiveLabel={t("archive") || "Archive"}
+												deleteLabel={t("delete") || "Delete"}
+											/>
 										);
 									})}
 								</div>
-							) : isSearchMode ? (
-								<div className="text-center py-8">
-									<Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-									<p className="text-sm text-muted-foreground">
-										{t("no_chats_found") || "No chats found"}
-									</p>
-									<p className="text-xs text-muted-foreground/70 mt-1">
-										{t("try_different_search") || "Try a different search term"}
-									</p>
-								</div>
 							) : (
-								<div className="text-center py-8">
-									<MessageCircleMore className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-									<p className="text-sm text-muted-foreground">
-										{showArchived
-											? t("no_archived_chats") || "No archived chats"
-											: t("no_chats") || "No chats yet"}
-									</p>
-									{!showArchived && (
-										<p className="text-xs text-muted-foreground/70 mt-1">
-											{t("start_new_chat_hint") || "Start a new chat from the chat page"}
-										</p>
-									)}
-								</div>
+								<ChatEmptyStates
+									isSearchMode={isSearchMode}
+									showArchived={showArchived}
+									noChatsFoundLabel={t("no_chats_found") || "No chats found"}
+									tryDifferentSearchLabel={t("try_different_search") || "Try a different search term"}
+									noArchivedChatsLabel={t("no_archived_chats") || "No archived chats"}
+									noChatsLabel={t("no_chats") || "No chats yet"}
+									startNewChatHintLabel={
+										t("start_new_chat_hint") || "Start a new chat from the chat page"
+									}
+								/>
 							)}
 						</div>
 					</motion.div>
