@@ -30,70 +30,13 @@ from app.models import Document
 from app.schemas.new_chat import ChatAttachment
 from app.services.connector_service import ConnectorService
 from app.services.new_streaming_service import VercelStreamingService
+from app.tasks.chat.context import (
+    extract_todos_from_deepagents,
+    format_attachments_as_context,
+    format_mentioned_documents_as_context,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def format_attachments_as_context(attachments: list[ChatAttachment]) -> str:
-    """Format attachments as context for the agent."""
-    if not attachments:
-        return ""
-
-    context_parts = ["<user_attachments>"]
-    for i, attachment in enumerate(attachments, 1):
-        context_parts.append(
-            f"<attachment index='{i}' name='{attachment.name}' type='{attachment.type}'>"
-        )
-        context_parts.append(f"<![CDATA[{attachment.content}]]>")
-        context_parts.append("</attachment>")
-    context_parts.append("</user_attachments>")
-
-    return "\n".join(context_parts)
-
-
-def format_mentioned_documents_as_context(documents: list[Document]) -> str:
-    """Format mentioned documents as context for the agent."""
-    if not documents:
-        return ""
-
-    context_parts = ["<mentioned_documents>"]
-    context_parts.append(
-        "The user has explicitly mentioned the following documents from their knowledge base. "
-        "These documents are directly relevant to the query and should be prioritized as primary sources."
-    )
-    for i, doc in enumerate(documents, 1):
-        context_parts.append(
-            f"<document index='{i}' id='{doc.id}' title='{doc.title}' type='{doc.document_type.value}'>"
-        )
-        context_parts.append(f"<![CDATA[{doc.content}]]>")
-        context_parts.append("</document>")
-    context_parts.append("</mentioned_documents>")
-
-    return "\n".join(context_parts)
-
-
-def extract_todos_from_deepagents(command_output) -> dict:
-    """
-    Extract todos from deepagents' TodoListMiddleware Command output.
-
-    deepagents returns a Command object with:
-    - Command.update['todos'] = [{'content': '...', 'status': '...'}]
-
-    Returns the todos directly (no transformation needed - UI matches deepagents format).
-    """
-    todos_data = []
-    if hasattr(command_output, "update"):
-        # It's a Command object from deepagents
-        update = command_output.update
-        todos_data = update.get("todos", [])
-    elif isinstance(command_output, dict):
-        # Already a dict - check if it has todos directly or in update
-        if "todos" in command_output:
-            todos_data = command_output.get("todos", [])
-        elif "update" in command_output and isinstance(command_output["update"], dict):
-            todos_data = command_output["update"].get("todos", [])
-
-    return {"todos": todos_data}
 
 
 async def stream_new_chat(
