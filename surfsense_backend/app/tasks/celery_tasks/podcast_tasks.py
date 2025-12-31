@@ -7,12 +7,9 @@ import sys
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-# Import for content-based podcast (new-chat)
-from app.agents.podcaster.graph import graph as podcaster_graph
-from app.agents.podcaster.state import State as PodcasterState
 from app.celery_app import celery_app
 from app.config import config
-from app.models import Podcast
+from app.services.podcast import PodcastGenerationService
 
 logger = logging.getLogger(__name__)
 
@@ -37,27 +34,6 @@ def get_celery_session_maker():
         echo=False,
     )
     return async_sessionmaker(engine, expire_on_commit=False)
-
-
-# =============================================================================
-# Content-based podcast generation (for new-chat)
-# =============================================================================
-
-
-def _clear_active_podcast_redis_key(search_space_id: int) -> None:
-    """Clear the active podcast task key from Redis when task completes."""
-    import os
-
-    import redis
-
-    try:
-        redis_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-        client = redis.from_url(redis_url, decode_responses=True)
-        key = f"podcast:active:{search_space_id}"
-        client.delete(key)
-        logger.info(f"Cleared active podcast key for search_space_id={search_space_id}")
-    except Exception as e:
-        logger.warning(f"Could not clear active podcast key: {e}")
 
 
 @celery_app.task(name="generate_content_podcast", bind=True)
@@ -101,7 +77,7 @@ def generate_content_podcast_task(
         return {"status": "error", "error": str(e)}
     finally:
         # Always clear the active podcast key when task completes (success or failure)
-        _clear_active_podcast_redis_key(search_space_id)
+        PodcastGenerationService.clear_active_podcast_redis_key(search_space_id)
         asyncio.set_event_loop(None)
         loop.close()
 
@@ -114,65 +90,10 @@ async def _generate_content_podcast(
 ) -> dict:
     """Generate content-based podcast with new session."""
     async with get_celery_session_maker()() as session:
-        try:
-            # Configure the podcaster graph
-            graph_config = {
-                "configurable": {
-                    "podcast_title": podcast_title,
-                    "search_space_id": search_space_id,
-                    "user_prompt": user_prompt,
-                }
-            }
-
-            # Initialize the podcaster state with the source content
-            initial_state = PodcasterState(
-                source_content=source_content,
-                db_session=session,
-            )
-
-            # Run the podcaster graph
-            result = await podcaster_graph.ainvoke(initial_state, config=graph_config)
-
-            # Extract results
-            podcast_transcript = result.get("podcast_transcript", [])
-            file_path = result.get("final_podcast_file_path", "")
-
-            # Convert transcript to serializable format
-            serializable_transcript = []
-            for entry in podcast_transcript:
-                if hasattr(entry, "speaker_id"):
-                    serializable_transcript.append(
-                        {"speaker_id": entry.speaker_id, "dialog": entry.dialog}
-                    )
-                else:
-                    serializable_transcript.append(
-                        {
-                            "speaker_id": entry.get("speaker_id", 0),
-                            "dialog": entry.get("dialog", ""),
-                        }
-                    )
-
-            # Save podcast to database
-            podcast = Podcast(
-                title=podcast_title,
-                podcast_transcript=serializable_transcript,
-                file_location=file_path,
-                search_space_id=search_space_id,
-            )
-            session.add(podcast)
-            await session.commit()
-            await session.refresh(podcast)
-
-            logger.info(f"Successfully generated content podcast: {podcast.id}")
-
-            return {
-                "status": "success",
-                "podcast_id": podcast.id,
-                "title": podcast_title,
-                "transcript_entries": len(serializable_transcript),
-            }
-
-        except Exception as e:
-            logger.error(f"Error in _generate_content_podcast: {e!s}")
-            await session.rollback()
-            raise
+        return await PodcastGenerationService.generate_content_podcast(
+            session=session,
+            source_content=source_content,
+            search_space_id=search_space_id,
+            podcast_title=podcast_title,
+            user_prompt=user_prompt,
+        )
