@@ -17,7 +17,7 @@ from .new_chat_routes import router as new_chat_router
 from .new_llm_config_routes import router as new_llm_config_router
 from .notes_routes import router as notes_router
 from .podcasts_routes import router as podcasts_router
-from .rbac_routes import router as rbac_router
+from .rbac import router as rbac_router
 from .search_spaces_routes import router as search_spaces_router
 from app.routes.connectors import router as connectors_router
 
