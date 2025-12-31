@@ -51,11 +51,11 @@ class ConnectorService:
                 )
                 chunk_count = result.scalar() or 0
                 self.source_id_counter = chunk_count + 1
-                 logger.info(
-                     f"Initialized source_id_counter to {self.source_id_counter} for search space {self.search_space_id}"
-                 )
+                logger.info(
+                    f"Initialized source_id_counter to {self.source_id_counter} for search space {self.search_space_id}"
+                )
             except Exception as e:
-                 logger.error(f"Error initializing source_id_counter: {e!s}")
+                logger.error(f"Error initializing source_id_counter: {e!s}")
                 # Fallback to default value
                 self.source_id_counter = 1
 
