@@ -16,7 +16,7 @@ from .discord_service import DiscordConnectorService
 from .elasticsearch_service import ElasticsearchConnectorService
 from .extension_service import ExtensionConnectorService
 from .files_service import FilesConnectorService
-from .github_service import GithubConnectorService
+from .github_service import GitHubConnectorService
 from .google_calendar_service import GoogleCalendarConnectorService
 from .google_gmail_service import GoogleGmailConnectorService
 from .jira_service import JiraConnectorService
@@ -37,7 +37,7 @@ class ConnectorFactory:
     _service_mapping: dict[str, type[BaseConnectorService]] = {
         "CRAWLED_URL": CrawledUrlsConnectorService,
         "FILE": FilesConnectorService,
-        "GITHUB_CONNECTOR": GithubConnectorService,
+        "GITHUB_CONNECTOR": GitHubConnectorService,
         "NOTION_CONNECTOR": NotionConnectorService,
         "SLACK_CONNECTOR": SlackConnectorService,
         "EXTENSION": ExtensionConnectorService,

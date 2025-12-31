@@ -35,13 +35,13 @@ class BaseModel(Base):
     id = Column(Integer, primary_key=True, index=True)
 
 
- engine = create_async_engine(
-     DATABASE_URL,
-     pool_size=20,
-     max_overflow=10,
-     pool_pre_ping=True,
-     pool_recycle=3600,
- )
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
