@@ -206,19 +206,19 @@ async def read_documents(
         # If specific search_space_id, check permission
         if search_space_id is not None:
             await check_permission(
-                session,
-                user,
-                search_space_id,
-                Permission.DOCUMENTS_READ.value,
-                "You don't have permission to read documents in this search space",
-            )
-             query = (
-                 select(Document)
-                 .options(selectinload(Document.chunks))
-                 .filter(Document.search_space_id == search_space_id)
-             )
+               session,
+               user,
+               search_space_id,
+               Permission.DOCUMENTS_READ.value,
+               "You don't have permission to read documents in this search space",
+           )
+            query = (
+                select(Document)
+               .options(selectinload(Document.chunks))
+               .filter(Document.search_space_id == search_space_id)
+           )
             count_query = (
-                select(func.count())
+               select(func.count())
                 .select_from(Document)
                 .filter(Document.search_space_id == search_space_id)
             )
