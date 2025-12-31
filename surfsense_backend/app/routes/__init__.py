@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from .airtable_add_connector_route import (
     router as airtable_add_connector_router,
 )
-from .documents_routes import router as documents_router
+from .documents import router as documents_router
 from .editor_routes import router as editor_router
 from .google_calendar_add_connector_route import (
     router as google_calendar_add_connector_router,
