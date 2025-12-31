@@ -26,7 +26,7 @@ import { getThreadMessages } from "@/lib/chat/thread-persistence";
  * Custom hook to handle chat thread initialization and message loading
  * Manages state reset, message restoration, and metadata hydration
  */
-export function useThreadInitializer(urlChatId: number) {
+export function useThreadInitializer(urlChatId: number, searchSpaceId: number) {
 	const [isInitializing, setIsInitializing] = useState(true);
 	const [threadId, setThreadId] = useState<number | null>(null);
 	const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
@@ -39,7 +39,7 @@ export function useThreadInitializer(urlChatId: number) {
 	const setMessageDocumentsMap = useSetAtom(messageDocumentsMapAtom);
 	const hydratePlanState = useSetAtom(hydratePlanStateAtom);
 
-	const initializeThread = useCallback(async () {
+	const initializeThread = useCallback(async () => {
 		setIsInitializing(true);
 
 		// Reset all state when switching between chats to prevent stale data
@@ -119,6 +119,7 @@ export function useThreadInitializer(urlChatId: number) {
 
 	return {
 		isInitializing,
+		setIsInitializing,
 		threadId,
 		setThreadId,
 		messages,
