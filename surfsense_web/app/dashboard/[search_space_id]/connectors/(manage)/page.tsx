@@ -1,16 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
 import { useAtomValue } from "jotai";
-import {
-	Calendar as CalendarIcon,
-	Clock,
-	Edit,
-	Loader2,
-	Plus,
-	RefreshCw,
-	Trash2,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { motion } from "motion/react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,51 +13,12 @@ import {
 	updateConnectorMutationAtom,
 } from "@/atoms/connectors/connector-mutation.atoms";
 import { connectorsAtom } from "@/atoms/connectors/connector-query.atoms";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConnectorsTable } from "@/components/connectors/connectors-table";
+import { DateRangeIndexingDialog } from "@/components/connectors/date-range-indexing-dialog";
+import { DeleteConnectorDialog } from "@/components/connectors/delete-connector-dialog";
+import { PeriodicIndexingDialog } from "@/components/connectors/periodic-indexing-dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { EnumConnectorName } from "@/contracts/enums/connector";
-import { getConnectorIcon } from "@/contracts/enums/connectorIcons";
-import { cn } from "@/lib/utils";
 
 export default function ConnectorsPage() {
 	const t = useTranslations("connectors");
@@ -316,400 +268,65 @@ export default function ConnectorsPage() {
 							</Button>
 						</div>
 					) : (
-						<div className="rounded-md border">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t("name")}</TableHead>
-										<TableHead>{t("type")}</TableHead>
-										<TableHead>{t("last_indexed")}</TableHead>
-										<TableHead>{t("periodic")}</TableHead>
-										<TableHead className="text-right">{t("actions")}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{connectors.map((connector) => (
-										<TableRow key={connector.id}>
-											<TableCell className="font-medium">{connector.name}</TableCell>
-											<TableCell>{getConnectorIcon(connector.connector_type)}</TableCell>
-											<TableCell>
-												{connector.is_indexable
-													? formatDateTime(connector.last_indexed_at)
-													: t("not_indexable")}
-											</TableCell>
-											<TableCell>
-												{connector.is_indexable ? (
-													connector.periodic_indexing_enabled ? (
-														<TooltipProvider>
-															<Tooltip>
-																<TooltipTrigger asChild>
-																	<div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-																		<Clock className="h-4 w-4" />
-																		<span className="text-sm font-medium">
-																			{connector.indexing_frequency_minutes
-																				? formatFrequency(connector.indexing_frequency_minutes)
-																				: "Enabled"}
-																		</span>
-																	</div>
-																</TooltipTrigger>
-																<TooltipContent>
-																	<p>
-																		Runs every {connector.indexing_frequency_minutes} minutes
-																		{connector.next_scheduled_at && (
-																			<>
-																				<br />
-																				Next: {formatDateTime(connector.next_scheduled_at)}
-																			</>
-																		)}
-																	</p>
-																</TooltipContent>
-															</Tooltip>
-														</TooltipProvider>
-													) : (
-														<span className="text-sm text-muted-foreground">Disabled</span>
-													)
-												) : (
-													<span className="text-sm text-muted-foreground">-</span>
-												)}
-											</TableCell>
-											<TableCell className="text-right">
-												<div className="flex justify-end gap-2">
-													{connector.is_indexable && (
-														<div className="flex gap-1">
-															<TooltipProvider>
-																<Tooltip>
-																	<TooltipTrigger asChild>
-																		<Button
-																			variant="outline"
-																			size="sm"
-																			onClick={() => handleOpenDatePicker(connector.id)}
-																			disabled={indexingConnectorId === connector.id}
-																		>
-																			{indexingConnectorId === connector.id ? (
-																				<RefreshCw className="h-4 w-4 animate-spin" />
-																			) : (
-																				<CalendarIcon className="h-4 w-4" />
-																			)}
-																			<span className="sr-only">{t("index_date_range")}</span>
-																		</Button>
-																	</TooltipTrigger>
-																	<TooltipContent>
-																		<p>{t("index_date_range")}</p>
-																	</TooltipContent>
-																</Tooltip>
-															</TooltipProvider>
-															<TooltipProvider>
-																<Tooltip>
-																	<TooltipTrigger asChild>
-																		<Button
-																			variant="outline"
-																			size="sm"
-																			onClick={() => handleQuickIndexConnector(connector.id)}
-																			disabled={indexingConnectorId === connector.id}
-																		>
-																			{indexingConnectorId === connector.id ? (
-																				<RefreshCw className="h-4 w-4 animate-spin" />
-																			) : (
-																				<RefreshCw className="h-4 w-4" />
-																			)}
-																			<span className="sr-only">{t("quick_index")}</span>
-																		</Button>
-																	</TooltipTrigger>
-																	<TooltipContent>
-																		<p>{t("quick_index_auto")}</p>
-																	</TooltipContent>
-																</Tooltip>
-															</TooltipProvider>
-														</div>
-													)}
-													{connector.is_indexable && (
-														<TooltipProvider>
-															<Tooltip>
-																<TooltipTrigger asChild>
-																	<Button
-																		variant="outline"
-																		size="sm"
-																		onClick={() => handleOpenPeriodicDialog(connector.id)}
-																	>
-																		<Clock className="h-4 w-4" />
-																		<span className="sr-only">Configure Periodic Indexing</span>
-																	</Button>
-																</TooltipTrigger>
-																<TooltipContent>
-																	<p>Configure Periodic Indexing</p>
-																</TooltipContent>
-															</Tooltip>
-														</TooltipProvider>
-													)}
-													<Button
-														variant="outline"
-														size="sm"
-														onClick={() =>
-															router.push(
-																`/dashboard/${searchSpaceId}/connectors/${connector.id}/edit`
-															)
-														}
-													>
-														<Edit className="h-4 w-4" />
-														<span className="sr-only">{tCommon("edit")}</span>
-													</Button>
-													<AlertDialog>
-														<AlertDialogTrigger asChild>
-															<Button
-																variant="outline"
-																size="sm"
-																className="text-destructive-foreground hover:bg-destructive/10"
-																onClick={() => setConnectorToDelete(connector.id)}
-															>
-																<Trash2 className="h-4 w-4" />
-																<span className="sr-only">{tCommon("delete")}</span>
-															</Button>
-														</AlertDialogTrigger>
-														<AlertDialogContent>
-															<AlertDialogHeader>
-																<AlertDialogTitle>{t("delete_connector")}</AlertDialogTitle>
-																<AlertDialogDescription>
-																	{t("delete_confirm")}
-																</AlertDialogDescription>
-															</AlertDialogHeader>
-															<AlertDialogFooter>
-																<AlertDialogCancel onClick={() => setConnectorToDelete(null)}>
-																	{tCommon("cancel")}
-																</AlertDialogCancel>
-																<AlertDialogAction
-																	className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-																	onClick={handleDeleteConnector}
-																>
-																	{tCommon("delete")}
-																</AlertDialogAction>
-															</AlertDialogFooter>
-														</AlertDialogContent>
-													</AlertDialog>
-												</div>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</div>
+						<ConnectorsTable
+							connectors={connectors}
+							searchSpaceId={searchSpaceId}
+							indexingConnectorId={indexingConnectorId}
+							formatDateTime={formatDateTime}
+							formatFrequency={formatFrequency}
+							onOpenDatePicker={handleOpenDatePicker}
+							onOpenPeriodicDialog={handleOpenPeriodicDialog}
+							onDelete={setConnectorToDelete}
+						/>
 					)}
 				</CardContent>
 			</Card>
 
-			{/* Date Picker Dialog */}
-			<Dialog open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>{t("select_date_range")}</DialogTitle>
-						<DialogDescription>{t("select_date_range_desc")}</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="start-date">{t("start_date")}</Label>
-								<Popover>
-									<PopoverTrigger asChild>
-										<Button
-											id="start-date"
-											variant="outline"
-											className={cn(
-												"w-full justify-start text-left font-normal",
-												!startDate && "text-muted-foreground"
-											)}
-										>
-											<CalendarIcon className="mr-2 h-4 w-4" />
-											{startDate ? format(startDate, "PPP") : t("pick_date")}
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0" align="start">
-										<Calendar
-											mode="single"
-											selected={startDate}
-											onSelect={setStartDate}
-											initialFocus
-										/>
-									</PopoverContent>
-								</Popover>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="end-date">{t("end_date")}</Label>
-								<Popover>
-									<PopoverTrigger asChild>
-										<Button
-											id="end-date"
-											variant="outline"
-											className={cn(
-												"w-full justify-start text-left font-normal",
-												!endDate && "text-muted-foreground"
-											)}
-										>
-											<CalendarIcon className="mr-2 h-4 w-4" />
-											{endDate ? format(endDate, "PPP") : t("pick_date")}
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0" align="start">
-										<Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
-									</PopoverContent>
-								</Popover>
-							</div>
-						</div>
-						<div className="flex gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									setStartDate(undefined);
-									setEndDate(undefined);
-								}}
-							>
-								{t("clear_dates")}
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									const thirtyDaysAgo = new Date(today);
-									thirtyDaysAgo.setDate(today.getDate() - 30);
-									setStartDate(thirtyDaysAgo);
-									setEndDate(today);
-								}}
-							>
-								{t("last_30_days")}
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									const yearAgo = new Date(today);
-									yearAgo.setFullYear(today.getFullYear() - 1);
-									setStartDate(yearAgo);
-									setEndDate(today);
-								}}
-							>
-								{t("last_year")}
-							</Button>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => {
-								setDatePickerOpen(false);
-								setSelectedConnectorForIndexing(null);
-								setStartDate(undefined);
-								setEndDate(undefined);
-							}}
-						>
-							{tCommon("cancel")}
-						</Button>
-						<Button onClick={handleIndexConnector}>{t("start_indexing")}</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<DeleteConnectorDialog
+				open={connectorToDelete !== null}
+				onOpenChange={(open) => !open && setConnectorToDelete(null)}
+				isDeleting={false}
+				onConfirm={handleDeleteConnector}
+			/>
 
-			{/* Periodic Indexing Configuration Dialog */}
-			<Dialog open={periodicDialogOpen} onOpenChange={setPeriodicDialogOpen}>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>Configure Periodic Indexing</DialogTitle>
-						<DialogDescription>
-							Set up automatic indexing at regular intervals for this connector.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-6 py-4">
-						<div className="flex items-center justify-between space-x-2">
-							<div className="space-y-0.5">
-								<Label htmlFor="periodic-enabled" className="text-base">
-									Enable Periodic Indexing
-								</Label>
-								<p className="text-sm text-muted-foreground">
-									Automatically index this connector at regular intervals
-								</p>
-							</div>
-							<Switch
-								id="periodic-enabled"
-								checked={periodicEnabled}
-								onCheckedChange={setPeriodicEnabled}
-							/>
-						</div>
+			<DateRangeIndexingDialog
+				open={datePickerOpen}
+				onOpenChange={setDatePickerOpen}
+				startDate={startDate}
+				endDate={endDate}
+				onStartDateChange={setStartDate}
+				onEndDateChange={setEndDate}
+				onClearDates={() => {
+					setStartDate(undefined);
+					setEndDate(undefined);
+				}}
+				onSelectLast30Days={() => {
+					const thirtyDaysAgo = new Date(today);
+					thirtyDaysAgo.setDate(today.getDate() - 30);
+					setStartDate(thirtyDaysAgo);
+					setEndDate(today);
+				}}
+				onSelectLastYear={() => {
+					const yearAgo = new Date(today);
+					yearAgo.setFullYear(today.getFullYear() - 1);
+					setStartDate(yearAgo);
+					setEndDate(today);
+				}}
+				onConfirm={handleIndexConnector}
+			/>
 
-						{periodicEnabled && (
-							<div className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="frequency">Indexing Frequency</Label>
-									<Select value={frequencyMinutes} onValueChange={setFrequencyMinutes}>
-										<SelectTrigger id="frequency">
-											<SelectValue placeholder="Select frequency" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="15">Every 15 minutes</SelectItem>
-											<SelectItem value="60">Every hour</SelectItem>
-											<SelectItem value="360">Every 6 hours</SelectItem>
-											<SelectItem value="720">Every 12 hours</SelectItem>
-											<SelectItem value="1440">Daily (24 hours)</SelectItem>
-											<SelectItem value="10080">Weekly (7 days)</SelectItem>
-											<SelectItem value="custom">Custom</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-
-								{frequencyMinutes === "custom" && (
-									<div className="space-y-2">
-										<Label htmlFor="custom-frequency">Custom Frequency (minutes)</Label>
-										<Input
-											id="custom-frequency"
-											type="number"
-											min="1"
-											placeholder="Enter minutes"
-											value={customFrequency}
-											onChange={(e) => setCustomFrequency(e.target.value)}
-										/>
-										<p className="text-xs text-muted-foreground">
-											Enter the number of minutes between each indexing run
-										</p>
-									</div>
-								)}
-
-								<div className="rounded-lg bg-muted p-3 text-sm">
-									<p className="font-medium mb-1">Preview:</p>
-									<p className="text-muted-foreground">
-										{frequencyMinutes === "custom" && customFrequency
-											? `Will run every ${customFrequency} minutes`
-											: frequencyMinutes === "15"
-												? "Will run every 15 minutes"
-												: frequencyMinutes === "60"
-													? "Will run every hour"
-													: frequencyMinutes === "360"
-														? "Will run every 6 hours"
-														: frequencyMinutes === "720"
-															? "Will run every 12 hours"
-															: frequencyMinutes === "1440"
-																? "Will run daily (every 24 hours)"
-																: frequencyMinutes === "10080"
-																	? "Will run weekly (every 7 days)"
-																	: "Select a frequency above"}
-									</p>
-								</div>
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => {
-								setPeriodicDialogOpen(false);
-								setSelectedConnectorForPeriodic(null);
-							}}
-						>
-							Cancel
-						</Button>
-						<Button onClick={handleSavePeriodicIndexing} disabled={isSavingPeriodic}>
-							{isSavingPeriodic && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							Save Configuration
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<PeriodicIndexingDialog
+				open={periodicDialogOpen}
+				onOpenChange={setPeriodicDialogOpen}
+				periodicEnabled={periodicEnabled}
+				onPeriodicEnabledChange={setPeriodicEnabled}
+				frequencyMinutes={frequencyMinutes}
+				onFrequencyMinutesChange={setFrequencyMinutes}
+				customFrequency={customFrequency}
+				onCustomFrequencyChange={setCustomFrequency}
+				isSaving={isSavingPeriodic}
+				onConfirm={handleSavePeriodicIndexing}
+			/>
 		</div>
 	);
 }

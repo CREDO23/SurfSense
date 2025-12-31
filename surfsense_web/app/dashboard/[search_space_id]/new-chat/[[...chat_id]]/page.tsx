@@ -11,7 +11,6 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import {
 	type MentionedDocumentInfo,
 	mentionedDocumentIdsAtom,
@@ -19,7 +18,6 @@ import {
 	messageDocumentsMapAtom,
 } from "@/atoms/chat/mentioned-documents.atom";
 import {
-	clearPlanOwnerRegistry,
 	extractWriteTodosFromContent,
 	hydratePlanStateAtom,
 } from "@/atoms/chat/plan-state.atom";
@@ -39,168 +37,20 @@ import {
 	setActivePodcastTaskId,
 } from "@/lib/chat/podcast-state";
 import {
-	appendMessage,
-	createThread,
-	getThreadMessages,
+	TOOLS_WITH_UI,
+	convertToThreadMessage,
+	extractMentionedDocuments,
+	extractThinkingSteps,
 	type MessageRecord,
-} from "@/lib/chat/thread-persistence";
+} from "@/lib/chat/chat-utils";
+import { useThreadInitializer } from "@/hooks/use-thread-initializer";
+import { appendMessage, createThread } from "@/lib/chat/thread-persistence";
 import {
 	trackChatCreated,
 	trackChatError,
 	trackChatMessageSent,
 	trackChatResponseReceived,
 } from "@/lib/posthog/events";
-
-/**
- * Extract thinking steps from message content
- */
-function extractThinkingSteps(content: unknown): ThinkingStep[] {
-	if (!Array.isArray(content)) return [];
-
-	const thinkingPart = content.find(
-		(part: unknown) =>
-			typeof part === "object" &&
-			part !== null &&
-			"type" in part &&
-			(part as { type: string }).type === "thinking-steps"
-	) as { type: "thinking-steps"; steps: ThinkingStep[] } | undefined;
-
-	return thinkingPart?.steps || [];
-}
-
-/**
- * Zod schema for mentioned document info (for type-safe parsing)
- */
-const MentionedDocumentInfoSchema = z.object({
-	id: z.number(),
-	title: z.string(),
-	document_type: z.string(),
-});
-
-const MentionedDocumentsPartSchema = z.object({
-	type: z.literal("mentioned-documents"),
-	documents: z.array(MentionedDocumentInfoSchema),
-});
-
-/**
- * Extract mentioned documents from message content (type-safe with Zod)
- */
-function extractMentionedDocuments(content: unknown): MentionedDocumentInfo[] {
-	if (!Array.isArray(content)) return [];
-
-	for (const part of content) {
-		const result = MentionedDocumentsPartSchema.safeParse(part);
-		if (result.success) {
-			return result.data.documents;
-		}
-	}
-
-	return [];
-}
-
-/**
- * Zod schema for persisted attachment info
- */
-const PersistedAttachmentSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	type: z.string(),
-	contentType: z.string().optional(),
-	imageDataUrl: z.string().optional(),
-	extractedContent: z.string().optional(),
-});
-
-const AttachmentsPartSchema = z.object({
-	type: z.literal("attachments"),
-	items: z.array(PersistedAttachmentSchema),
-});
-
-type PersistedAttachment = z.infer<typeof PersistedAttachmentSchema>;
-
-/**
- * Extract persisted attachments from message content (type-safe with Zod)
- */
-function extractPersistedAttachments(content: unknown): PersistedAttachment[] {
-	if (!Array.isArray(content)) return [];
-
-	for (const part of content) {
-		const result = AttachmentsPartSchema.safeParse(part);
-		if (result.success) {
-			return result.data.items;
-		}
-	}
-
-	return [];
-}
-
-/**
- * Convert backend message to assistant-ui ThreadMessageLike format
- * Filters out 'thinking-steps' part as it's handled separately via messageThinkingSteps
- * Restores attachments for user messages from persisted data
- */
-function convertToThreadMessage(msg: MessageRecord): ThreadMessageLike {
-	let content: ThreadMessageLike["content"];
-
-	if (typeof msg.content === "string") {
-		content = [{ type: "text", text: msg.content }];
-	} else if (Array.isArray(msg.content)) {
-		// Filter out custom metadata parts - they're handled separately
-		const filteredContent = msg.content.filter((part: unknown) => {
-			if (typeof part !== "object" || part === null || !("type" in part)) return true;
-			const partType = (part as { type: string }).type;
-			// Filter out thinking-steps, mentioned-documents, and attachments
-			return (
-				partType !== "thinking-steps" &&
-				partType !== "mentioned-documents" &&
-				partType !== "attachments"
-			);
-		});
-		content =
-			filteredContent.length > 0
-				? (filteredContent as ThreadMessageLike["content"])
-				: [{ type: "text", text: "" }];
-	} else {
-		content = [{ type: "text", text: String(msg.content) }];
-	}
-
-	// Restore attachments for user messages
-	let attachments: ThreadMessageLike["attachments"];
-	if (msg.role === "user") {
-		const persistedAttachments = extractPersistedAttachments(msg.content);
-		if (persistedAttachments.length > 0) {
-			attachments = persistedAttachments.map((att) => ({
-				id: att.id,
-				name: att.name,
-				type: att.type as "document" | "image" | "file",
-				contentType: att.contentType || "application/octet-stream",
-				status: { type: "complete" as const },
-				content: [],
-				// Custom fields for our ChatAttachment interface
-				imageDataUrl: att.imageDataUrl,
-				extractedContent: att.extractedContent,
-			}));
-		}
-	}
-
-	return {
-		id: `msg-${msg.id}`,
-		role: msg.role,
-		content,
-		createdAt: new Date(msg.created_at),
-		attachments,
-	};
-}
-
-/**
- * Tools that should render custom UI in the chat.
- */
-const TOOLS_WITH_UI = new Set([
-	"generate_podcast",
-	"link_preview",
-	"display_image",
-	"scrape_webpage",
-	"write_todos",
-]);
 
 /**
  * Type for thinking step data from the backend
@@ -215,15 +65,7 @@ interface ThinkingStepData {
 export default function NewChatPage() {
 	const params = useParams();
 	const queryClient = useQueryClient();
-	const [isInitializing, setIsInitializing] = useState(true);
-	const [threadId, setThreadId] = useState<number | null>(null);
-	const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
 	const [isRunning, setIsRunning] = useState(false);
-	// Store thinking steps per message ID - kept separate from content to avoid
-	// "unsupported part type" errors from assistant-ui
-	const [messageThinkingSteps, setMessageThinkingSteps] = useState<Map<string, ThinkingStep[]>>(
-		new Map()
-	);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	// Get mentioned document IDs from the composer
@@ -256,85 +98,6 @@ export default function NewChatPage() {
 		return Number.isNaN(parsed) ? 0 : parsed;
 	}, [params.chat_id]);
 
-	// Initialize thread and load messages
-	// For new chats (no urlChatId), we use lazy creation - thread is created on first message
-	const initializeThread = useCallback(async () => {
-		setIsInitializing(true);
-
-		// Reset all state when switching between chats to prevent stale data
-		setMessages([]);
-		setThreadId(null);
-		setMessageThinkingSteps(new Map());
-		setMentionedDocumentIds([]);
-		setMentionedDocuments([]);
-		setMessageDocumentsMap({});
-		clearPlanOwnerRegistry(); // Reset plan ownership for new chat
-
-		try {
-			if (urlChatId > 0) {
-				// Thread exists - load messages
-				setThreadId(urlChatId);
-				const response = await getThreadMessages(urlChatId);
-				if (response.messages && response.messages.length > 0) {
-					const loadedMessages = response.messages.map(convertToThreadMessage);
-					setMessages(loadedMessages);
-
-					// Extract and restore thinking steps from persisted messages
-					const restoredThinkingSteps = new Map<string, ThinkingStep[]>();
-					// Extract and restore mentioned documents from persisted messages
-					const restoredDocsMap: Record<string, MentionedDocumentInfo[]> = {};
-
-					for (const msg of response.messages) {
-						if (msg.role === "assistant") {
-							const steps = extractThinkingSteps(msg.content);
-							if (steps.length > 0) {
-								restoredThinkingSteps.set(`msg-${msg.id}`, steps);
-							}
-							// Hydrate write_todos plan state from persisted tool calls
-							const writeTodosCalls = extractWriteTodosFromContent(msg.content);
-							for (const todoData of writeTodosCalls) {
-								hydratePlanState(todoData);
-							}
-						}
-						if (msg.role === "user") {
-							const docs = extractMentionedDocuments(msg.content);
-							if (docs.length > 0) {
-								restoredDocsMap[`msg-${msg.id}`] = docs;
-							}
-						}
-					}
-					if (restoredThinkingSteps.size > 0) {
-						setMessageThinkingSteps(restoredThinkingSteps);
-					}
-					if (Object.keys(restoredDocsMap).length > 0) {
-						setMessageDocumentsMap(restoredDocsMap);
-					}
-				}
-			}
-			// For new chats (urlChatId === 0), don't create thread yet
-			// Thread will be created lazily when user sends first message
-			// This improves UX (instant load) and avoids orphan threads
-		} catch (error) {
-			console.error("[NewChatPage] Failed to initialize thread:", error);
-			// Keep threadId as null - don't use Date.now() as it creates an invalid ID
-			// that will cause 404 errors on subsequent API calls
-			setThreadId(null);
-			toast.error("Failed to load chat. Please try again.");
-		} finally {
-			setIsInitializing(false);
-		}
-	}, [
-		urlChatId,
-		setMessageDocumentsMap,
-		setMentionedDocumentIds,
-		setMentionedDocuments,
-		hydratePlanState,
-	]);
-
-	// Initialize on mount
-	useEffect(() => {
-		initializeThread();
-	}, [initializeThread]);
 
 	// Cancel ongoing request
 	const cancelRun = useCallback(async () => {

@@ -1,29 +1,20 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-	BookOpen,
-	ChevronDown,
-	ChevronUp,
-	ExternalLink,
-	FileText,
-	Hash,
-	Loader2,
-	Sparkles,
-	X,
-} from "lucide-react";
+import { Hash, Loader2, Sparkles } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type React from "react";
-import { forwardRef, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MarkdownViewer } from "@/components/markdown-viewer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { documentsApiService } from "@/lib/apis/documents-api.service";
 import { cacheKeys } from "@/lib/query-client/cache-keys";
-import { cn } from "@/lib/utils";
+import { ChunkCard } from "./chunk-card";
+import { ChunksNavigation } from "./chunks-navigation";
+import { DocumentMetadata } from "./document-metadata";
+import { DocumentSummary } from "./document-summary";
+import { PanelHeader } from "./panel-header";
 
 interface SourceDetailPanelProps {
 	open: boolean;
@@ -35,75 +26,6 @@ interface SourceDetailPanelProps {
 	url?: string;
 	children?: ReactNode;
 }
-
-const formatDocumentType = (type: string) => {
-	if (!type) return "";
-	return type
-		.split("_")
-		.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-		.join(" ");
-};
-
-// Chunk card component
-// For large documents (>30 chunks), we disable animation to prevent layout shifts
-// which break auto-scroll functionality
-interface ChunkCardProps {
-	chunk: { id: number; content: string };
-	index: number;
-	totalChunks: number;
-	isCited: boolean;
-	isActive: boolean;
-	disableLayoutAnimation?: boolean;
-}
-
-const ChunkCard = forwardRef<HTMLDivElement, ChunkCardProps>(
-	({ chunk, index, totalChunks, isCited, isActive, disableLayoutAnimation }, ref) => {
-		return (
-			<div
-				ref={ref}
-				data-chunk-index={index}
-				className={cn(
-					"group relative rounded-2xl border-2 transition-all duration-300",
-					isCited
-						? "bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border-primary shadow-lg shadow-primary/10"
-						: "bg-card border-border/50 hover:border-border hover:shadow-md"
-				)}
-			>
-				{/* Cited indicator glow effect */}
-				{isCited && <div className="absolute inset-0 rounded-2xl bg-primary/5 blur-xl -z-10" />}
-
-				{/* Header */}
-				<div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-					<div className="flex items-center gap-3">
-						<div
-							className={cn(
-								"flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-colors",
-								isCited
-									? "bg-primary text-primary-foreground"
-									: "bg-muted text-muted-foreground group-hover:bg-muted/80"
-							)}
-						>
-							{index + 1}
-						</div>
-						<span className="text-sm text-muted-foreground">of {totalChunks} chunks</span>
-					</div>
-					{isCited && (
-						<Badge variant="default" className="gap-1.5 px-3 py-1">
-							<Sparkles className="h-3 w-3" />
-							Cited Source
-						</Badge>
-					)}
-				</div>
-
-				{/* Content */}
-				<div className="p-5 overflow-hidden">
-					<MarkdownViewer content={chunk.content} />
-				</div>
-			</div>
-		);
-	}
-);
-ChunkCard.displayName = "ChunkCard";
 
 export function SourceDetailPanel({
 	open,
@@ -313,52 +235,15 @@ export function SourceDetailPanel({
 						}}
 						className="fixed inset-3 sm:inset-6 md:inset-10 lg:inset-16 z-50 flex flex-col bg-background rounded-3xl shadow-2xl border overflow-hidden"
 					>
-						{/* Header */}
-						<motion.div
-							initial={{ opacity: 0, y: -10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.1 }}
-							className="flex items-center justify-between px-6 py-5 border-b bg-linear-to-r from-muted/50 to-muted/30"
-						>
-							<div className="min-w-0 flex-1">
-								<h2 className="text-xl font-semibold truncate">
-									{documentData?.title || title || "Source Document"}
-								</h2>
-								<p className="text-sm text-muted-foreground mt-0.5">
-									{documentData
-										? formatDocumentType(documentData.document_type)
-										: sourceType && formatDocumentType(sourceType)}
-									{documentData?.chunks && (
-										<span className="ml-2">
-											• {documentData.chunks.length} chunk
-											{documentData.chunks.length !== 1 ? "s" : ""}
-										</span>
-									)}
-								</p>
-							</div>
-							<div className="flex items-center gap-3 shrink-0">
-								{url && (
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={(e) => handleUrlClick(e, url)}
-										className="hidden sm:flex gap-2 rounded-xl"
-									>
-										<ExternalLink className="h-4 w-4" />
-										Open Source
-									</Button>
-								)}
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={() => onOpenChange(false)}
-									className="h-8 w-8 rounded-full"
-								>
-									<X className="h-4 w-4" />
-									<span className="sr-only">Close</span>
-								</Button>
-							</div>
-						</motion.div>
+												{/* Header Component */}
+						<PanelHeader
+							sourceType={sourceType}
+							title={title}
+							description={description}
+							url={url}
+							isLoading={isLoading}
+							onClose={() => onOpenChange(false)}
+						/>
 
 						{/* Loading State */}
 						{!isDirectRenderSource && isDocumentByChunkFetching && (
@@ -490,66 +375,21 @@ export function SourceDetailPanel({
 								{/* Main Content */}
 								<ScrollArea className="flex-1" ref={scrollAreaRef}>
 									<div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
-										{/* Document Metadata */}
-										{documentData.document_metadata &&
-											Object.keys(documentData.document_metadata).length > 0 && (
-												<motion.div
-													initial={{ opacity: 0, y: 10 }}
-													animate={{ opacity: 1, y: 0 }}
-													transition={{ delay: 0.1 }}
-													className="p-5 bg-muted/30 rounded-2xl border"
-												>
-													<h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-														<FileText className="h-4 w-4" />
-														Document Information
-													</h3>
-													<dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-														{Object.entries(documentData.document_metadata).map(([key, value]) => (
-															<div key={key} className="space-y-1">
-																<dt className="font-medium text-muted-foreground capitalize text-xs">
-																	{key.replace(/_/g, " ")}
-																</dt>
-																<dd className="text-foreground wrap-break-word">{String(value)}</dd>
-															</div>
-														))}
-													</dl>
-												</motion.div>
-											)}
+																				{/* Document Metadata */}
+										<DocumentMetadata
+											metadata={documentData.document_metadata || {}}
+											delay={0.1}
+										/>
 
 										{/* Summary Collapsible */}
-										{documentData.content && (
-											<motion.div
-												initial={{ opacity: 0, y: 10 }}
-												animate={{ opacity: 1, y: 0 }}
-												transition={{ delay: 0.15 }}
-											>
-												<Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
-													<CollapsibleTrigger className="w-full flex items-center justify-between p-5 rounded-2xl bg-linear-to-r from-muted/50 to-muted/30 border hover:from-muted/70 hover:to-muted/50 transition-all duration-200">
-														<span className="font-semibold flex items-center gap-2">
-															<BookOpen className="h-4 w-4" />
-															Document Summary
-														</span>
-														<motion.div
-															animate={{ rotate: summaryOpen ? 180 : 0 }}
-															transition={{ duration: 0.2 }}
-														>
-															<ChevronDown className="h-5 w-5 text-muted-foreground" />
-														</motion.div>
-													</CollapsibleTrigger>
-													<CollapsibleContent>
-														<motion.div
-															initial={{ opacity: 0 }}
-															animate={{ opacity: 1 }}
-															className="mt-3 p-5 bg-muted/20 rounded-2xl border"
-														>
-															<MarkdownViewer content={documentData.content} />
-														</motion.div>
-													</CollapsibleContent>
-												</Collapsible>
-											</motion.div>
-										)}
+										<DocumentSummary
+											content={documentData.content || ""}
+											open={summaryOpen}
+											onOpenChange={setSummaryOpen}
+											delay={0.15}
+										/>
 
-										{/* Chunks Header */}
+{/* Chunks Header */}
 										<div className="flex items-center justify-between pt-4">
 											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
 												<Hash className="h-4 w-4" />

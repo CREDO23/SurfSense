@@ -6,8 +6,11 @@ Allows fetching issue lists and their comments, projects and more.
 """
 
 import base64
+import logging
 from datetime import datetime
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import requests
 
@@ -202,7 +205,7 @@ class JiraConnector:
             issues = result["issues"]
             all_issues.extend(issues)
 
-            print(f"Fetched {len(issues)} issues (startAt={start_at})")
+            logger.info(f"Fetched {len(issues)} issues (startAt={start_at})")
 
             total = result.get("total", 0)
             if start_at + len(issues) >= total:

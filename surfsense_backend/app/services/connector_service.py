@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any
 from urllib.parse import urljoin
@@ -19,6 +20,7 @@ from app.models import (
 from app.retriever.chunks_hybrid_search import ChucksHybridSearchRetriever
 from app.retriever.documents_hybrid_search import DocumentHybridSearchRetriever
 
+logger = logging.getLogger(__name__)
 
 class ConnectorService:
     def __init__(self, session: AsyncSession, search_space_id: int | None = None):
@@ -49,11 +51,11 @@ class ConnectorService:
                 )
                 chunk_count = result.scalar() or 0
                 self.source_id_counter = chunk_count + 1
-                print(
-                    f"Initialized source_id_counter to {self.source_id_counter} for search space {self.search_space_id}"
-                )
+                 logger.info(
+                     f"Initialized source_id_counter to {self.source_id_counter} for search space {self.search_space_id}"
+                 )
             except Exception as e:
-                print(f"Error initializing source_id_counter: {e!s}")
+                 logger.error(f"Error initializing source_id_counter: {e!s}")
                 # Fallback to default value
                 self.source_id_counter = 1
 
@@ -521,7 +523,7 @@ class ConnectorService:
 
         except Exception as e:
             # Log the error and return empty results
-            print(f"Error searching with Tavily: {e!s}")
+            logger.error(f"Error searching with Tavily: {e!s}")
             return {
                 "id": 3,
                 "name": "Tavily Search",
@@ -554,7 +556,7 @@ class ConnectorService:
         host = config.get("SEARXNG_HOST")
 
         if not host:
-            print("SearxNG connector is missing SEARXNG_HOST configuration")
+            logger.error("SearxNG connector is missing SEARXNG_HOST configuration")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -639,7 +641,7 @@ class ConnectorService:
                 )
                 response.raise_for_status()
         except httpx.HTTPError as exc:
-            print(f"Error searching with SearxNG: {exc!s}")
+            logger.error(f"Error searching with SearxNG: {exc!s}")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -650,7 +652,7 @@ class ConnectorService:
         try:
             data = response.json()
         except ValueError:
-            print("Failed to decode JSON response from SearxNG")
+            logger.error("Failed to decode JSON response from SearxNG")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -751,8 +753,8 @@ class ConnectorService:
         api_key = config.get("BAIDU_API_KEY")
 
         if not api_key:
-            print("ERROR: Baidu connector is missing BAIDU_API_KEY configuration")
-            print(f"Connector config: {config}")
+            logger.error("ERROR: Baidu connector is missing BAIDU_API_KEY configuration")
+            logger.error(f"Connector config: {config}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -804,8 +806,8 @@ class ConnectorService:
                 )
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
-            print(f"ERROR: Baidu API request timeout after 90s: {exc!r}")
-            print(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"ERROR: Baidu API request timeout after 90s: {exc!r}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -813,9 +815,9 @@ class ConnectorService:
                 "sources": [],
             }, []
         except httpx.HTTPStatusError as exc:
-            print(f"ERROR: Baidu API HTTP Status Error: {exc.response.status_code}")
-            print(f"Response text: {exc.response.text[:500]}")
-            print(f"Request URL: {exc.request.url}")
+            logger.error(f"ERROR: Baidu API HTTP Status Error: {exc.response.status_code}")
+            logger.error(f"Response text: {exc.response.text[:500]}")
+            logger.error(f"Request URL: {exc.request.url}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -823,8 +825,8 @@ class ConnectorService:
                 "sources": [],
             }, []
         except httpx.RequestError as exc:
-            print(f"ERROR: Baidu API Request Error: {type(exc).__name__}: {exc!r}")
-            print(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"ERROR: Baidu API Request Error: {type(exc).__name__}: {exc!r}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -832,11 +834,11 @@ class ConnectorService:
                 "sources": [],
             }, []
         except Exception as exc:
-            print(
+            logger.error(
                 f"ERROR: Unexpected error calling Baidu API: {type(exc).__name__}: {exc!r}"
             )
-            print(f"Endpoint: {baidu_endpoint}")
-            print(f"Payload: {payload}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"Payload: {payload}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -847,9 +849,9 @@ class ConnectorService:
         try:
             data = response.json()
         except ValueError as e:
-            print(f"ERROR: Failed to decode JSON response from Baidu AI Search: {e}")
-            print(f"Response status: {response.status_code}")
-            print(f"Response text: {response.text[:500]}")  # First 500 chars
+            logger.error(f"ERROR: Failed to decode JSON response from Baidu AI Search: {e}")
+            logger.error(f"Response status: {response.status_code}")
+            logger.error(f"Response text: {response.text[:500]}")  # First 500 chars
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -861,13 +863,13 @@ class ConnectorService:
         baidu_references = data.get("references", [])
 
         if "code" in data or "message" in data:
-            print(
+            logger.error(
                 f"WARNING: Baidu API returned error - Code: {data.get('code')}, Message: {data.get('message')}"
             )
 
         if not baidu_references:
-            print("WARNING: No references found in Baidu API response")
-            print(f"Response keys: {list(data.keys())}")
+            logger.error("WARNING: No references found in Baidu API response")
+            logger.error(f"Response keys: {list(data.keys())}")
             return {
                 "id": 12,
                 "name": "Baidu Search",
@@ -2086,7 +2088,7 @@ class ConnectorService:
 
         except Exception as e:
             # Log the error and return empty results
-            print(f"Error searching with Linkup: {e!s}")
+            logger.error(f"Error searching with Linkup: {e!s}")
             return {
                 "id": 10,
                 "name": "Linkup Search",

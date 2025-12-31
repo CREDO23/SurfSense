@@ -6,7 +6,10 @@ Allows fetching issue lists and their comments with date range filtering.
 """
 
 from datetime import datetime
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import requests
 
@@ -459,13 +462,13 @@ if __name__ == "__main__":
     try:
         # Get all issues with comments
         issues = linear.get_all_issues()
-        print(f"Retrieved {len(issues)} issues")
+        logger.info(f"Retrieved {len(issues)} issues")
         
         # Format and print the first issue as markdown
         if issues:
             issue_md = linear.format_issue_to_markdown(issues[0])
-            print("\nSample Issue in Markdown:\n")
-            print(issue_md)
+            logger.info("\nSample Issue in Markdown:\n")
+            logger.info(issue_md)
             
         # Get issues by date range
         start_date = "2023-01-01"
@@ -473,10 +476,10 @@ if __name__ == "__main__":
         date_issues, error = linear.get_issues_by_date_range(start_date, end_date)
         
         if error:
-            print(f"Error: {error}")
+            logger.info(f"Error: {error}")
         else:
-            print(f"\nRetrieved {len(date_issues)} issues from {start_date} to {end_date}")
+            logger.info(f"\nRetrieved {len(date_issues)} issues from {start_date} to {end_date}")
     
     except Exception as e:
-        print(f"Error: {e}")
+        logger.info(f"Error: {e}")
 """

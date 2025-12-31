@@ -209,7 +209,11 @@ async def read_documents(
                 Permission.DOCUMENTS_READ.value,
                 "You don't have permission to read documents in this search space",
             )
-            query = select(Document).filter(Document.search_space_id == search_space_id)
+             query = (
+                 select(Document)
+                 .options(selectinload(Document.chunks))
+                 .filter(Document.search_space_id == search_space_id)
+             )
             count_query = (
                 select(func.count())
                 .select_from(Document)
@@ -219,6 +223,7 @@ async def read_documents(
             # Get documents from all search spaces user has membership in
             query = (
                 select(Document)
+                 .options(selectinload(Document.chunks))
                 .join(SearchSpace)
                 .join(SearchSpaceMembership)
                 .filter(SearchSpaceMembership.user_id == user.id)

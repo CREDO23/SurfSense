@@ -10,7 +10,10 @@ managing prompt configurations.
 """
 
 from dataclasses import dataclass
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 import yaml
 from langchain_litellm import ChatLiteLLM
@@ -159,7 +162,7 @@ def load_llm_config_from_yaml(llm_config_id: int = -1) -> dict | None:
     if not config_file.exists():
         config_file = base_dir / "app" / "config" / "global_llm_config.example.yaml"
         if not config_file.exists():
-            print("Error: No global_llm_config.yaml or example file found")
+            logger.info("Error: No global_llm_config.yaml or example file found")
             return None
 
     try:
@@ -170,10 +173,10 @@ def load_llm_config_from_yaml(llm_config_id: int = -1) -> dict | None:
                 if isinstance(cfg, dict) and cfg.get("id") == llm_config_id:
                     return cfg
 
-            print(f"Error: Global LLM config id {llm_config_id} not found")
+            logger.info(f"Error: Global LLM config id {llm_config_id} not found")
             return None
     except Exception as e:
-        print(f"Error loading config: {e}")
+        logger.info(f"Error loading config: {e}")
         return None
 
 
@@ -201,12 +204,12 @@ async def load_new_llm_config_from_db(
         config = result.scalars().first()
 
         if not config:
-            print(f"Error: NewLLMConfig with id {config_id} not found")
+            logger.info(f"Error: NewLLMConfig with id {config_id} not found")
             return None
 
         return AgentConfig.from_new_llm_config(config)
     except Exception as e:
-        print(f"Error loading NewLLMConfig from database: {e}")
+        logger.info(f"Error loading NewLLMConfig from database: {e}")
         return None
 
 
@@ -240,7 +243,7 @@ async def load_agent_llm_config_for_search_space(
         search_space = result.scalars().first()
 
         if not search_space:
-            print(f"Error: SearchSpace with id {search_space_id} not found")
+            logger.info(f"Error: SearchSpace with id {search_space_id} not found")
             return None
 
         # Use agent_llm_id from search space, fallback to -1 (first global config)
@@ -251,7 +254,7 @@ async def load_agent_llm_config_for_search_space(
         # Load the config using the unified loader
         return await load_agent_config(session, config_id, search_space_id)
     except Exception as e:
-        print(f"Error loading agent LLM config for search space {search_space_id}: {e}")
+        logger.info(f"Error loading agent LLM config for search space {search_space_id}: {e}")
         return None
 
 

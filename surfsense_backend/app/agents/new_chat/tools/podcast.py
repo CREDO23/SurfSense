@@ -12,7 +12,10 @@ Duplicate request prevention:
 """
 
 import os
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import redis
 from langchain_core.tools import tool
@@ -54,7 +57,7 @@ def set_active_podcast_task(search_space_id: int, task_id: str) -> None:
         # Set with 30-minute expiry as safety net (podcast should complete before this)
         client.setex(get_active_podcast_key(search_space_id), 1800, task_id)
     except Exception as e:
-        print(f"[generate_podcast] Warning: Could not set active task in Redis: {e}")
+        logger.info(f"[generate_podcast] Warning: Could not set active task in Redis: {e}")
 
 
 def clear_active_podcast_task(search_space_id: int) -> None:
@@ -63,7 +66,7 @@ def clear_active_podcast_task(search_space_id: int) -> None:
         client = get_redis_client()
         client.delete(get_active_podcast_key(search_space_id))
     except Exception as e:
-        print(f"[generate_podcast] Warning: Could not clear active task in Redis: {e}")
+        logger.info(f"[generate_podcast] Warning: Could not clear active task in Redis: {e}")
 
 
 def create_generate_podcast_tool(
@@ -124,7 +127,7 @@ def create_generate_podcast_tool(
             # Check if a podcast is already being generated for this search space
             active_task_id = get_active_podcast_task(search_space_id)
             if active_task_id:
-                print(
+                logger.info(
                     f"[generate_podcast] Blocked duplicate request. Active task: {active_task_id}"
                 )
                 return {
@@ -150,7 +153,7 @@ def create_generate_podcast_tool(
             # Mark this task as active
             set_active_podcast_task(search_space_id, task.id)
 
-            print(f"[generate_podcast] Submitted Celery task: {task.id}")
+            logger.info(f"[generate_podcast] Submitted Celery task: {task.id}")
 
             # Return immediately with task_id for polling
             return {
@@ -162,7 +165,7 @@ def create_generate_podcast_tool(
 
         except Exception as e:
             error_message = str(e)
-            print(f"[generate_podcast] Error submitting task: {error_message}")
+            logger.info(f"[generate_podcast] Error submitting task: {error_message}")
             return {
                 "status": "error",
                 "error": error_message,

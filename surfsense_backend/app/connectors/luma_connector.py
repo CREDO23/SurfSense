@@ -6,7 +6,10 @@ Allows fetching event lists, event details, and guest information with date rang
 """
 
 from datetime import datetime
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import requests
 
@@ -403,22 +406,22 @@ if __name__ == "__main__":
         # Test authentication
         user_info, error = luma.get_user_info()
         if error:
-            print(f"Authentication error: {error}")
+            logger.info(f"Authentication error: {error}")
         else:
-            print(f"Authenticated as: {user_info.get('name', 'Unknown')}")
+            logger.info(f"Authenticated as: {user_info.get('name', 'Unknown')}")
         
         # Get all events
         events, error = luma.get_all_events()
         if error:
-            print(f"Error fetching events: {error}")
+            logger.info(f"Error fetching events: {error}")
         else:
-            print(f"Retrieved {len(events)} events")
+            logger.info(f"Retrieved {len(events)} events")
             
             # Format and print the first event as markdown
             if events:
                 event_md = luma.format_event_to_markdown(events[0])
-                print("\nSample Event in Markdown:\n")
-                print(event_md)
+                logger.info("\nSample Event in Markdown:\n")
+                logger.info(event_md)
         
         # Get events by date range
         start_date = "2023-01-01"
@@ -426,10 +429,10 @@ if __name__ == "__main__":
         date_events, error = luma.get_events_by_date_range(start_date, end_date)
         
         if error:
-            print(f"Error: {error}")
+            logger.info(f"Error: {error}")
         else:
-            print(f"\nRetrieved {len(date_events)} events from {start_date} to {end_date}")
+            logger.info(f"\nRetrieved {len(date_events)} events from {start_date} to {end_date}")
     
     except Exception as e:
-        print(f"Error: {e}")
+        logger.info(f"Error: {e}")
 """

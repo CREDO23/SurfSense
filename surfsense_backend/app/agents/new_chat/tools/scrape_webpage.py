@@ -7,8 +7,11 @@ the agent to answer questions about web pages.
 """
 
 import hashlib
+import logging
 from typing import Any
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 from langchain_core.tools import tool
 
@@ -184,7 +187,7 @@ def create_scrape_webpage_tool(firecrawl_api_key: str | None = None):
 
         except Exception as e:
             error_message = str(e)
-            print(f"[scrape_webpage] Error scraping {url}: {error_message}")
+            logger.info(f"[scrape_webpage] Error scraping {url}: {error_message}")
             return {
                 "id": scrape_id,
                 "assetId": url,

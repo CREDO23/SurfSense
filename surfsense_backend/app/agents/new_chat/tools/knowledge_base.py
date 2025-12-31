@@ -9,8 +9,11 @@ This module provides:
 """
 
 import json
+import logging
 from datetime import datetime
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from langchain_core.tools import tool
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -486,7 +489,7 @@ async def search_knowledge_base_async(
                 all_documents.extend(chunks)
 
         except Exception as e:
-            print(f"Error searching connector {connector}: {e}")
+            logger.info(f"Error searching connector {connector}: {e}")
             continue
 
     # Deduplicate by content hash

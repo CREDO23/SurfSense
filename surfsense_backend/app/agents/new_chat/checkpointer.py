@@ -6,8 +6,11 @@ that stores conversation state in the PostgreSQL database.
 """
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+import logging
 
 from app.config import config
+
+logger = logging.getLogger(__name__)
 
 # Global checkpointer instance (initialized lazily)
 _checkpointer: AsyncPostgresSaver | None = None
@@ -75,7 +78,7 @@ async def setup_checkpointer_tables() -> None:
     tables exist before any agent calls.
     """
     await get_checkpointer()
-    print("[Checkpointer] PostgreSQL checkpoint tables ready")
+    logger.info("[Checkpointer] PostgreSQL checkpoint tables ready")
 
 
 async def close_checkpointer() -> None:
@@ -91,4 +94,4 @@ async def close_checkpointer() -> None:
         _checkpointer = None
         _checkpointer_context = None
         _checkpointer_initialized = False
-        print("[Checkpointer] PostgreSQL connection closed")
+        logger.info("[Checkpointer] PostgreSQL connection closed")
