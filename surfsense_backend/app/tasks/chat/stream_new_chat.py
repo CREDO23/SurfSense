@@ -17,19 +17,14 @@ from langchain_core.messages import HumanMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.agents.new_chat.chat_deepagent import create_surfsense_deep_agent
-from app.agents.new_chat.checkpointer import get_checkpointer
-from app.agents.new_chat.llm_config import (
-    AgentConfig,
-    create_chat_litellm_from_agent_config,
-    create_chat_litellm_from_config,
-    load_agent_config,
-    load_llm_config_from_yaml,
-)
 from app.models import Document
 from app.schemas.new_chat import ChatAttachment
-from app.services.connector_service import ConnectorService
 from app.services.new_streaming_service import VercelStreamingService
+from app.tasks.chat.config import (
+    create_configured_agent,
+    load_llm_instance,
+    setup_connector_service,
+)
 from app.tasks.chat.context import (
     extract_todos_from_deepagents,
     format_attachments_as_context,
@@ -74,70 +69,23 @@ async def stream_new_chat(
     current_text_id: str | None = None
 
     try:
-        # Load LLM config - supports both YAML (negative IDs) and database (positive IDs)
-        agent_config: AgentConfig | None = None
-
-        if llm_config_id >= 0:
-            # Positive ID: Load from NewLLMConfig database table
-            agent_config = await load_agent_config(
-                session=session,
-                config_id=llm_config_id,
-                search_space_id=search_space_id,
-            )
-            if not agent_config:
-                yield streaming_service.format_error(
-                    f"Failed to load NewLLMConfig with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-
-            # Create ChatLiteLLM from AgentConfig
-            llm = create_chat_litellm_from_agent_config(agent_config)
-        else:
-            # Negative ID: Load from YAML (global configs)
-            llm_config = load_llm_config_from_yaml(llm_config_id=llm_config_id)
-            if not llm_config:
-                yield streaming_service.format_error(
-                    f"Failed to load LLM config with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-
-            # Create ChatLiteLLM from YAML config dict
-            llm = create_chat_litellm_from_config(llm_config)
-            # Create AgentConfig from YAML for consistency (uses defaults for prompt settings)
-            agent_config = AgentConfig.from_yaml_config(llm_config)
-
-        if not llm:
-            yield streaming_service.format_error("Failed to create LLM instance")
+        # Load LLM instance and config
+        llm, agent_config, error_msg = await load_llm_instance(
+            session, llm_config_id, search_space_id
+        )
+        if error_msg:
+            yield streaming_service.format_error(error_msg)
             yield streaming_service.format_done()
             return
 
-        # Create connector service
-        connector_service = ConnectorService(session, search_space_id=search_space_id)
-
-        # Get Firecrawl API key from webcrawler connector if configured
-        from app.models import SearchSourceConnectorType
-
-        firecrawl_api_key = None
-        webcrawler_connector = await connector_service.get_connector_by_type(
-            SearchSourceConnectorType.WEBCRAWLER_CONNECTOR, search_space_id
+        # Set up connector service and get Firecrawl API key
+        connector_service, firecrawl_api_key = await setup_connector_service(
+            session, search_space_id
         )
-        if webcrawler_connector and webcrawler_connector.config:
-            firecrawl_api_key = webcrawler_connector.config.get("FIRECRAWL_API_KEY")
 
-        # Get the PostgreSQL checkpointer for persistent conversation memory
-        checkpointer = await get_checkpointer()
-
-        # Create the deep agent with checkpointer and configurable prompts
-        agent = create_surfsense_deep_agent(
-            llm=llm,
-            search_space_id=search_space_id,
-            db_session=session,
-            connector_service=connector_service,
-            checkpointer=checkpointer,
-            agent_config=agent_config,  # Pass prompt configuration
-            firecrawl_api_key=firecrawl_api_key,  # Pass Firecrawl API key if configured
+        # Create configured agent
+        agent = await create_configured_agent(
+            llm, search_space_id, session, connector_service, agent_config, firecrawl_api_key
         )
 
         # Build input with message history from frontend
