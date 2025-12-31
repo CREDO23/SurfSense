@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
 from .base import BaseConnectorService
+
+logger = logging.getLogger(__name__)
 
 
 class BaiduConnectorService(BaseConnectorService):
@@ -49,8 +52,8 @@ class BaiduConnectorService(BaseConnectorService):
         api_key = config.get("BAIDU_API_KEY")
 
         if not api_key:
-            print("ERROR: Baidu connector is missing BAIDU_API_KEY configuration")
-            print(f"Connector config: {config}")
+            logger.error("Baidu connector is missing BAIDU_API_KEY configuration")
+            logger.error(f"Connector config: {config}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -102,8 +105,8 @@ class BaiduConnectorService(BaseConnectorService):
                 )
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
-            print(f"ERROR: Baidu API request timeout after 90s: {exc!r}")
-            print(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"Baidu API request timeout after 90s: {exc!r}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -111,9 +114,9 @@ class BaiduConnectorService(BaseConnectorService):
                 "sources": [],
             }, []
         except httpx.HTTPStatusError as exc:
-            print(f"ERROR: Baidu API HTTP Status Error: {exc.response.status_code}")
-            print(f"Response text: {exc.response.text[:500]}")
-            print(f"Request URL: {exc.request.url}")
+            logger.error(f"Baidu API HTTP Status Error: {exc.response.status_code}")
+            logger.error(f"Response text: {exc.response.text[:500]}")
+            logger.error(f"Request URL: {exc.request.url}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -121,8 +124,8 @@ class BaiduConnectorService(BaseConnectorService):
                 "sources": [],
             }, []
         except httpx.RequestError as exc:
-            print(f"ERROR: Baidu API Request Error: {type(exc).__name__}: {exc!r}")
-            print(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"Baidu API Request Error: {type(exc).__name__}: {exc!r}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -130,11 +133,11 @@ class BaiduConnectorService(BaseConnectorService):
                 "sources": [],
             }, []
         except Exception as exc:
-            print(
-                f"ERROR: Unexpected error calling Baidu API: {type(exc).__name__}: {exc!r}"
+            logger.error(
+                f"Unexpected error calling Baidu API: {type(exc).__name__}: {exc!r}"
             )
-            print(f"Endpoint: {baidu_endpoint}")
-            print(f"Payload: {payload}")
+            logger.error(f"Endpoint: {baidu_endpoint}")
+            logger.error(f"Payload: {payload}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -145,9 +148,9 @@ class BaiduConnectorService(BaseConnectorService):
         try:
             data = response.json()
         except ValueError as e:
-            print(f"ERROR: Failed to decode JSON response from Baidu AI Search: {e}")
-            print(f"Response status: {response.status_code}")
-            print(f"Response text: {response.text[:500]}")  # First 500 chars
+            logger.error(f"Failed to decode JSON response from Baidu AI Search: {e}")
+            logger.error(f"Response status: {response.status_code}")
+            logger.error(f"Response text: {response.text[:500]}")  # First 500 chars
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -159,13 +162,13 @@ class BaiduConnectorService(BaseConnectorService):
         baidu_references = data.get("references", [])
 
         if "code" in data or "message" in data:
-            print(
-                f"WARNING: Baidu API returned error - Code: {data.get('code')}, Message: {data.get('message')}"
+            logger.warning(
+                f"Baidu API returned error - Code: {data.get('code')}, Message: {data.get('message')}"
             )
 
         if not baidu_references:
-            print("WARNING: No references found in Baidu API response")
-            print(f"Response keys: {list(data.keys())}")
+            logger.warning("No references found in Baidu API response")
+            logger.warning(f"Response keys: {list(data.keys())}")
             return {
                 "id": 12,
                 "name": self.CONNECTOR_NAME,
@@ -235,4 +238,3 @@ class BaiduConnectorService(BaseConnectorService):
         }
 
         return result_object, documents
-

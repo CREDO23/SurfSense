@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 from typing import Any
 
 from .base import BaseConnectorService
+
+logger = logging.getLogger(__name__)
 
 
 class SearxngConnectorService(BaseConnectorService):
@@ -37,7 +40,7 @@ class SearxngConnectorService(BaseConnectorService):
         host = config.get("SEARXNG_HOST")
 
         if not host:
-            print("SearxNG connector is missing SEARXNG_HOST configuration")
+            logger.error("SearxNG connector is missing SEARXNG_HOST configuration")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -122,7 +125,7 @@ class SearxngConnectorService(BaseConnectorService):
                 )
                 response.raise_for_status()
         except httpx.HTTPError as exc:
-            print(f"Error searching with SearxNG: {exc!s}")
+            logger.error(f"Error searching with SearxNG: {exc!s}")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -133,7 +136,7 @@ class SearxngConnectorService(BaseConnectorService):
         try:
             data = response.json()
         except ValueError:
-            print("Failed to decode JSON response from SearxNG")
+            logger.error("Failed to decode JSON response from SearxNG")
             return {
                 "id": 11,
                 "name": "SearxNG Search",
@@ -196,4 +199,3 @@ class SearxngConnectorService(BaseConnectorService):
         }
 
         return result_object, documents
-

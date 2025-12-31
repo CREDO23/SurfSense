@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 from typing import Any
 
 from .base import BaseConnectorService
+
+logger = logging.getLogger(__name__)
 
 
 class TavilyConnectorService(BaseConnectorService):
@@ -110,11 +113,10 @@ class TavilyConnectorService(BaseConnectorService):
 
         except Exception as e:
             # Log the error and return empty results
-            print(f"Error searching with Tavily: {e!s}")
+            logger.error(f"Error searching with Tavily: {e!s}")
             return {
                 "id": 3,
                 "name": self.CONNECTOR_NAME,
                 "type": "TAVILY_API",
                 "sources": [],
             }, []
-

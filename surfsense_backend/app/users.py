@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import Depends, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -13,6 +14,8 @@ from pydantic import BaseModel
 
 from app.config import config
 from app.models import User, get_user_db
+
+logger = logging.getLogger(__name__)
 
 
 class BearerResponse(BaseModel):
@@ -36,17 +39,17 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Request | None = None):
-        print(f"User {user.id} has registered.")
+        logger.info(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None
     ):
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        logger.info(f"User {user.id} has forgot their password. Reset token: {token}")
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Request | None = None
     ):
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        logger.info(f"Verification requested for user {user.id}. Verification token: {token}")
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):

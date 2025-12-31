@@ -1,6 +1,7 @@
 # Force asyncio to use standard event loop before unstructured imports
 import asyncio
 
+import logging
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -26,10 +27,12 @@ from app.schemas import (
 from app.users import current_active_user
 from app.utils.rbac import check_permission
 
+logger = logging.getLogger(__name__)
+
 try:
     asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 except RuntimeError as e:
-    print("Error setting event loop policy", e)
+    logger.error(f"Error setting event loop policy: {e}")
     pass
 
 import os

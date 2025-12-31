@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 from typing import Any
 
 from .base import BaseConnectorService
+
+logger = logging.getLogger(__name__)
 
 
 class LinkupConnectorService(BaseConnectorService):
@@ -125,11 +128,10 @@ class LinkupConnectorService(BaseConnectorService):
 
         except Exception as e:
             # Log the error and return empty results
-            print(f"Error searching with Linkup: {e!s}")
+            logger.error(f"Error searching with Linkup: {e!s}")
             return {
                 "id": 10,
                 "name": "Linkup Search",
                 "type": "LINKUP_API",
                 "sources": [],
             }, []
-

@@ -7,6 +7,8 @@ import logging
 import warnings
 from logging import ERROR, getLogger
 
+logger = getLogger(__name__)
+
 from fastapi import HTTPException
 from langchain_core.documents import Document as LangChainDocument
 from litellm import atranscription
@@ -475,7 +477,7 @@ async def process_file_in_background(
             try:
                 os.unlink(file_path)
             except Exception as e:
-                print("Error deleting temp file", e)
+                logger.error(f"Error deleting temp file: {e}")
                 pass
 
             await task_logger.log_task_progress(
@@ -600,7 +602,7 @@ async def process_file_in_background(
             try:
                 os.unlink(file_path)
             except Exception as e:
-                print("Error deleting temp file", e)
+                logger.error(f"Error deleting temp file: {e}")
                 pass
 
             # Process transcription as markdown document
@@ -745,7 +747,7 @@ async def process_file_in_background(
                 try:
                     os.unlink(file_path)
                 except Exception as e:
-                    print("Error deleting temp file", e)
+                    logger.error(f"Error deleting temp file: {e}")
                     pass
 
                 # Pass the documents to the existing background task
@@ -814,7 +816,7 @@ async def process_file_in_background(
                 try:
                     os.unlink(file_path)
                 except Exception as e:
-                    print("Error deleting temp file", e)
+                    logger.error(f"Error deleting temp file: {e}")
                     pass
 
                 # Get markdown documents from the result
@@ -973,7 +975,7 @@ async def process_file_in_background(
                 try:
                     os.unlink(file_path)
                 except Exception as e:
-                    print("Error deleting temp file", e)
+                    logger.error(f"Error deleting temp file: {e}")
                     pass
 
                 await task_logger.log_task_progress(

@@ -1,6 +1,7 @@
 """Base connector service with shared functionality."""
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -11,6 +12,8 @@ from sqlalchemy.future import select
 from app.models import Chunk, Document
 from app.retriever.chunks_hybrid_search import ChucksHybridSearchRetriever
 from app.retriever.documents_hybrid_search import DocumentHybridSearchRetriever
+
+logger = logging.getLogger(__name__)
 
 
 class BaseConnectorService:
@@ -36,7 +39,7 @@ class BaseConnectorService:
                 chunk_count = result.scalar() or 0
                 self.source_id_counter = chunk_count + 1
             except Exception as e:
-                print(f"Error initializing source_id_counter: {e!s}")
+                logger.error(f"Error initializing source_id_counter: {e!s}")
                 self.source_id_counter = 1
 
     async def _combined_rrf_search(

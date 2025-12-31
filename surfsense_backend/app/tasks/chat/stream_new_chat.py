@@ -10,6 +10,7 @@ Supports loading LLM configurations from:
 """
 
 import json
+import logging
 from collections.abc import AsyncGenerator
 
 from langchain_core.messages import HumanMessage
@@ -29,6 +30,8 @@ from app.models import Document
 from app.schemas.new_chat import ChatAttachment
 from app.services.connector_service import ConnectorService
 from app.services.new_streaming_service import VercelStreamingService
+
+logger = logging.getLogger(__name__)
 
 
 def format_attachments_as_context(attachments: list[ChatAttachment]) -> str:
@@ -1046,7 +1049,7 @@ async def stream_new_chat(
     except Exception as e:
         # Handle any errors
         error_message = f"Error during chat: {e!s}"
-        print(f"[stream_new_chat] {error_message}")
+        logger.error(f"[stream_new_chat] {error_message}")
 
         # Close any open text block
         if current_text_id is not None:

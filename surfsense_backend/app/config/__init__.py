@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
+import logging
 import yaml
 from chonkie import AutoEmbeddings, CodeChunker, RecursiveChunker
 from dotenv import load_dotenv
@@ -12,6 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file)
+
+logger = logging.getLogger(__name__)
 
 
 def is_ffmpeg_installed():
@@ -44,7 +47,7 @@ def load_global_llm_configs():
             data = yaml.safe_load(f)
             return data.get("global_llm_configs", [])
     except Exception as e:
-        print(f"Warning: Failed to load global LLM configs: {e}")
+        logger.warning(f"Failed to load global LLM configs: {e}")
         return []
 
 

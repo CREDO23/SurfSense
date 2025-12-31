@@ -1,10 +1,13 @@
 import datetime
+import logging
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.llm_service import get_document_summary_llm
+
+logger = logging.getLogger(__name__)
 
 
 class QueryService:
@@ -39,9 +42,7 @@ class QueryService:
             # Get the search space's document summary LLM instance
             llm = await get_document_summary_llm(session, search_space_id)
             if not llm:
-                print(
-                    f"Warning: No document summary LLM configured for search space {search_space_id}. Using original query."
-                )
+                logger.warning(f"No document summary LLM configured for search space {search_space_id}. Using original query.")
                 return user_query
 
             # Create system message with instructions
@@ -92,7 +93,7 @@ class QueryService:
 
         except Exception as e:
             # Log the error and return the original query
-            print(f"Error reformulating query: {e}")
+            logger.error(f"Error reformulating query: {e}")
             return user_query
 
     @staticmethod
