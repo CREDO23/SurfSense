@@ -311,7 +311,8 @@ class AirtableConnector:
             #    f"IS_BEFORE({{date_field}}, '{end_date}')"
             #    f")"
             # ).replace("{date_field}", date_field)
-            # TODO: Investigate how to properly use filter formula
+            # Note: Airtable filter formulas require specific syntax and field types.
+            # Date filtering currently disabled - needs proper field type detection.
 
             return self.get_all_records(
                 base_id=base_id,
