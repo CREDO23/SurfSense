@@ -93,7 +93,7 @@ class ChucksHybridSearchRetriever:
 
         # Create tsvector and tsquery for PostgreSQL full-text search
         tsvector = func.to_tsvector("english", Chunk.content)
-        tsquery = func.plainto_tsquery("english", query_text)
+        tsquery = func.websearch_to_tsquery("english", query_text)
 
         # Build the query filtered by search space
         query = (
@@ -167,7 +167,7 @@ class ChucksHybridSearchRetriever:
 
         # Create tsvector and tsquery for PostgreSQL full-text search
         tsvector = func.to_tsvector("english", Chunk.content)
-        tsquery = func.plainto_tsquery("english", query_text)
+        tsquery = func.websearch_to_tsquery("english", query_text)
 
         # Base conditions for chunk filtering - search space is required
         base_conditions = [Document.search_space_id == search_space_id]
