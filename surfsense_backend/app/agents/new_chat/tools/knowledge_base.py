@@ -262,8 +262,49 @@ async def search_knowledge_base_async(
     )
 
     connectors = _normalize_connectors(connectors_to_search)
+    
+    # Create async tasks for parallel search execution
+    async def search_connector(connector):
+        try:
+            search_method = {
+                "YOUTUBE_VIDEO": connector_service.search_youtube,
+                "EXTENSION": connector_service.search_extension,
+                "FILE": connector_service.search_files,
+                "CRAWLED_URL": connector_service.search_crawled_urls,
+                "GITHUB_CONNECTOR": connector_service.search_github,
+                "SLACK_CONNECTOR": connector_service.search_slack,
+                "NOTION_CONNECTOR": connector_service.search_notion,
+                "LINEAR_CONNECTOR": connector_service.search_linear,
+                "JIRA_CONNECTOR": connector_service.search_jira,
+                "GOOGLE_CALENDAR_CONNECTOR": connector_service.search_google_calendar,
+                "AIRTABLE_CONNECTOR": connector_service.search_airtable,
+                "GOOGLE_GMAIL_CONNECTOR": connector_service.search_google_gmail,
+                "CONFLUENCE_CONNECTOR": connector_service.search_confluence,
+                "CLICKUP_CONNECTOR": connector_service.search_clickup,
+                "DISCORD_CONNECTOR": connector_service.search_discord,
+                "LUMA_CONNECTOR": connector_service.search_luma,
+                "ELASTICSEARCH_CONNECTOR": connector_service.search_elasticsearch,
+                "NOTE": connector_service.search_notes,
+                "BOOKSTACK_CONNECTOR": connector_service.search_bookstack,
+            }.get(connector)
+            
+            if search_method:
+                _, chunks = await search_method(
+                    user_query=query,
+                    search_space_id=search_space_id,
+                    top_k=top_k,
+                    start_date=resolved_start_date,
+                    end_date=resolved_end_date,
+                )
+                return chunks
+        except Exception as e:
+            logger.error(f"Error searching {connector}: {e}")
+        return []
+    
+    # Execute all searches in parallel
+    results = await asyncio.gather(*[search_connector(c) for c in connectors])
+    all_documents = [chunk for chunks in results for chunk in chunks]
 
-    for connector in connectors:
         try:
             if connector == "YOUTUBE_VIDEO":
                 _, chunks = await connector_service.search_youtube(
