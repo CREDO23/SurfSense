@@ -29,7 +29,7 @@ def extract_domain(url: str) -> str:
         if domain.startswith("www."):
             domain = domain[4:]
         return domain
-    except Exception:
+    except (ValueError, AttributeError):
         return ""
 
 
@@ -228,7 +228,7 @@ async def fetch_with_chromium(url: str) -> dict[str, Any] | None:
         logger.info(f"[link_preview] Successfully fetched {url} via Chromium")
         return result
 
-    except Exception as e:
+    except (RuntimeError, TimeoutError, ConnectionError) as e:
         logger.error(f"[link_preview] Chromium fallback failed for {url}: {e}")
         return None
 
