@@ -320,7 +320,7 @@ export const Grid = ({ pattern, size }: { pattern?: number[][]; size?: number })
 	);
 };
 
-export function GridPattern({ width, height, x, y, squares, ...props }: any) {
+export function GridPattern({ width, height, x, y, squares, ...props }: { width: number; height: number; x: string; y: string; squares?: number[][]; className?: string }) {
 	const patternId = useId();
 
 	return (
@@ -340,7 +340,7 @@ export function GridPattern({ width, height, x, y, squares, ...props }: any) {
 			<rect width="100%" height="100%" strokeWidth={0} fill={`url(#${patternId})`} />
 			{squares && (
 				<svg aria-hidden="true" x={x} y={y} className="overflow-visible">
-					{squares.map(([x, y]: any, idx: number) => (
+					{squares.map(([x, y], idx: number) => (
 						<rect
 							strokeWidth="0"
 							key={`${x}-${y}-${idx}`}

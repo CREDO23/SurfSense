@@ -39,7 +39,7 @@ export const Navbar = () => {
 	);
 };
 
-const DesktopNav = ({ navItems, isScrolled }: any) => {
+const DesktopNav = ({ navItems, isScrolled }: { navItems: Array<{ name: string; link: string }>; isScrolled: boolean }) => {
 	const [hovered, setHovered] = useState<number | null>(null);
 	const { compactFormat: githubStars, loading: loadingGithubStars } = useGithubStars();
 	return (
@@ -59,7 +59,7 @@ const DesktopNav = ({ navItems, isScrolled }: any) => {
 				<span className="dark:text-white/90 text-gray-800 text-lg font-bold">SurfSense</span>
 			</div>
 			<div className="hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 lg:flex lg:space-x-2">
-				{navItems.map((navItem: any, idx: number) => (
+				{navItems.map((navItem, idx: number) => (
 					<Link
 						onMouseEnter={() => setHovered(idx)}
 						onMouseLeave={() => setHovered(null)}
@@ -113,7 +113,7 @@ const DesktopNav = ({ navItems, isScrolled }: any) => {
 	);
 };
 
-const MobileNav = ({ navItems, isScrolled }: any) => {
+const MobileNav = ({ navItems, isScrolled }: { navItems: Array<{ name: string; link: string }>; isScrolled: boolean }) => {
 	const [open, setOpen] = useState(false);
 	const { compactFormat: githubStars, loading: loadingGithubStars } = useGithubStars();
 
@@ -156,7 +156,7 @@ const MobileNav = ({ navItems, isScrolled }: any) => {
 						transition={{ duration: 0.2, ease: "easeOut" }}
 						className="absolute inset-x-0 top-full mt-1 z-20 flex w-full flex-col items-start justify-start gap-4 rounded-xl bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl px-4 py-6 dark:bg-neutral-950/90 dark:border-neutral-800/50"
 					>
-						{navItems.map((navItem: any, idx: number) => (
+						{navItems.map((navItem, idx: number) => (
 							<Link
 								key={`link=${idx}`}
 								href={navItem.link}
