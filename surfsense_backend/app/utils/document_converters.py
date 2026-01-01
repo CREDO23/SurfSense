@@ -43,7 +43,8 @@ def optimize_content_for_context_window(
 
     # Reserve tokens for: system prompt, metadata, template overhead, and output
     # Conservative estimate: 2000 tokens for prompt + metadata + output buffer
-    # TODO: Calculate Summary System Prompt Token Count Here
+    # Note: System prompt token count is included in reserved_tokens estimate.
+    # Adjust reserved_tokens if using custom system prompts.
     reserved_tokens = 2000
 
     # Add metadata token cost if present
