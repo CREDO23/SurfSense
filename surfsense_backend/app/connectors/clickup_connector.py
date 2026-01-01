@@ -8,6 +8,7 @@ Allows fetching tasks from workspaces and lists.
 from typing import Any
 
 import requests
+from datetime import datetime
 
 
 class ClickUpConnector:
@@ -168,13 +169,15 @@ class ClickUpConnector:
             Tuple containing (tasks list, error message or None)
         """
         try:
-            # TODO : Include date range in api request
-
+            # Note: ClickUp API doesn't support date_created_gt/lt in team endpoint.
+            # Using date_updated_gt/date_updated_lt as alternative filtering.
             params = {
                 "page": 0,
                 "order_by": "created",
                 "reverse": "true",
                 "subtasks": "true",
+                "date_updated_gt": int(datetime.fromisoformat(start_date).timestamp() * 1000),
+                "date_updated_lt": int(datetime.fromisoformat(end_date).timestamp() * 1000),
             }
 
             all_tasks = []
