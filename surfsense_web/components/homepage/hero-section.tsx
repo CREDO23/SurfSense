@@ -67,10 +67,9 @@ export function HeroSection() {
 					</div>
 				</Balancer>
 			</h2>
-			{/* // TODO:aCTUAL DESCRITION */}
 			<p className="relative z-50 mx-auto mt-4 max-w-lg px-4 text-center text-base/6 text-gray-600 dark:text-gray-200">
-				Connect any LLM to your internal knowledge sources and chat with it in real time alongside
-				your team.
+				Connect any LLM to your internal knowledge sources and collaborate with your team in real time.
+				Search, chat, and share insights across your organization's data.
 			</p>
 			<div className="mb-10 mt-8 flex w-full flex-col items-center justify-center gap-4 px-8 sm:flex-row md:mb-20">
 				<Link
