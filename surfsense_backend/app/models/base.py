@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
 from fastapi import Depends
-from sqlalchemy import TIMESTAMP, Column, Integer, text
+from sqlalchemy import TIMESTAMP, Column, Integer, event, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 
@@ -42,6 +42,22 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_recycle=3600,
 )
+
+# Connection pool monitoring
+@event.listens_for(engine.sync_engine, "connect")
+def receive_connect(dbapi_conn, connection_record):
+    """Log new database connections."""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"New DB connection established: {id(dbapi_conn)}")
+
+@event.listens_for(engine.sync_engine, "close")
+def receive_close(dbapi_conn, connection_record):
+    """Log closed database connections."""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"DB connection closed: {id(dbapi_conn)}")
+
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
