@@ -240,13 +240,13 @@ class JiraConnector:
             date_filter = (
                 f"(createdDate >= '{start_date}' AND createdDate <= '{end_date}')"
             )
-            # TODO : This JQL needs some improvement to work as expected
-
             jql = f"{date_filter}"
             if project_key:
                 jql = (
-                    f'project = "{project_key}" AND {date_filter} ORDER BY created DESC'
+                    f"project = '{project_key}' AND {date_filter} ORDER BY created DESC"
                 )
+            else:
+                jql = f"{date_filter} ORDER BY created DESC"
 
             # Define fields to retrieve
             fields = [
