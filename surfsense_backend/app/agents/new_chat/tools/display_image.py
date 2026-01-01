@@ -21,7 +21,7 @@ def extract_domain(url: str) -> str:
         if domain.startswith("www."):
             domain = domain[4:]
         return domain
-    except Exception:
+    except (ValueError, AttributeError):
         return ""
 
 
