@@ -130,7 +130,8 @@ export function RolesTab({
 											{canUpdate && (
 												<DropdownMenuItem
 													onClick={() => {
-														// TODO: Implement edit role dialog/modal
+														// Note: Edit role functionality to be implemented
+														console.warn('Edit role not yet implemented');
 													}}
 												>
 													<Edit2 className="h-4 w-4 mr-2" />
@@ -215,5 +216,4 @@ export function RolesTab({
 }
 
 // ============ Invites Tab ============
-
 
