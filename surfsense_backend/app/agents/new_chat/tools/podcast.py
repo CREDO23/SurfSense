@@ -45,7 +45,7 @@ def get_active_podcast_task(search_space_id: int) -> str | None:
     try:
         client = get_redis_client()
         return client.get(get_active_podcast_key(search_space_id))
-    except Exception:
+    except (ConnectionError, TimeoutError):
         # If Redis is unavailable, allow the request (fail open)
         return None
 
@@ -56,7 +56,7 @@ def set_active_podcast_task(search_space_id: int, task_id: str) -> None:
         client = get_redis_client()
         # Set with 30-minute expiry as safety net (podcast should complete before this)
         client.setex(get_active_podcast_key(search_space_id), 1800, task_id)
-    except Exception as e:
+    except (ConnectionError, TimeoutError) as e:
         logger.info(f"[generate_podcast] Warning: Could not set active task in Redis: {e}")
 
 
@@ -65,7 +65,7 @@ def clear_active_podcast_task(search_space_id: int) -> None:
     try:
         client = get_redis_client()
         client.delete(get_active_podcast_key(search_space_id))
-    except Exception as e:
+    except (ConnectionError, TimeoutError) as e:
         logger.info(f"[generate_podcast] Warning: Could not clear active task in Redis: {e}")
 
 
