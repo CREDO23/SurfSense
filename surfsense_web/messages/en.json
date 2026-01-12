@@ -89,7 +89,6 @@
 		"description_placeholder": "What is this search space for?",
 		"create_button": "Create",
 		"creating": "Creating...",
-		"all_search_spaces": "All Search Spaces",
 		"search_spaces_count": "{count, plural, =0 {No search spaces} =1 {1 search space} other {# search spaces}}",
 		"no_search_spaces": "No search spaces yet",
 		"create_first_search_space": "Create your first search space to get started",
@@ -192,7 +191,6 @@
 		"add_connector": "Add Connector",
 		"manage_connectors": "Manage Connectors",
 		"logs": "Logs",
-		"all_search_spaces": "All Search Spaces",
 		"team": "Team"
 	},
 	"pricing": {
@@ -669,7 +667,6 @@
 		"select_search_space": "Select Search Space",
 		"manage_members": "Manage members",
 		"search_space_settings": "Search Space settings",
-		"see_all_search_spaces": "See all search spaces",
 		"expand_sidebar": "Expand sidebar",
 		"collapse_sidebar": "Collapse sidebar",
 		"user_settings": "User settings",

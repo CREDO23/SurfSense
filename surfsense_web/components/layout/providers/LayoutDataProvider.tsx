@@ -8,7 +8,6 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useCallback, useMemo, useState } from "react";
 import { hasUnsavedEditorChangesAtom, pendingEditorNavigationAtom } from "@/atoms/editor/ui.atoms";
-import { deleteSearchSpaceMutationAtom } from "@/atoms/search-spaces/search-space-mutation.atoms";
 import { searchSpacesAtom } from "@/atoms/search-spaces/search-space-query.atoms";
 import { currentUserAtom } from "@/atoms/user/user-query.atoms";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,6 @@ import { cacheKeys } from "@/lib/query-client/cache-keys";
 import type { ChatItem, NavItem, NoteItem, SearchSpace } from "../types/layout.types";
 import { CreateSearchSpaceDialog } from "../ui/dialogs";
 import { LayoutShell } from "../ui/shell";
-import { AllSearchSpacesSheet } from "../ui/sheets";
 import { AllChatsSidebar } from "../ui/sidebar/AllChatsSidebar";
 import { AllNotesSidebar } from "../ui/sidebar/AllNotesSidebar";
 
@@ -56,8 +54,7 @@ export function LayoutDataProvider({
 
 	// Atoms
 	const { data: user } = useAtomValue(currentUserAtom);
-	const { data: searchSpacesData, refetch: refetchSearchSpaces } = useAtomValue(searchSpacesAtom);
-	const { mutateAsync: deleteSearchSpace } = useAtomValue(deleteSearchSpaceMutationAtom);
+	const { data: searchSpacesData } = useAtomValue(searchSpacesAtom);
 	const hasUnsavedEditorChanges = useAtomValue(hasUnsavedEditorChangesAtom);
 	const setPendingNavigation = useSetAtom(pendingEditorNavigationAtom);
 
@@ -114,8 +111,7 @@ export function LayoutDataProvider({
 	const [isAllChatsSidebarOpen, setIsAllChatsSidebarOpen] = useState(false);
 	const [isAllNotesSidebarOpen, setIsAllNotesSidebarOpen] = useState(false);
 
-	// Search space sheet and dialog state
-	const [isAllSearchSpacesSheetOpen, setIsAllSearchSpacesSheetOpen] = useState(false);
+	// Create search space dialog state
 	const [isCreateSearchSpaceDialogOpen, setIsCreateSearchSpaceDialogOpen] = useState(false);
 
 	// Delete dialogs state
@@ -210,36 +206,9 @@ export function LayoutDataProvider({
 		setIsCreateSearchSpaceDialogOpen(true);
 	}, []);
 
-	const handleSeeAllSearchSpaces = useCallback(() => {
-		setIsAllSearchSpacesSheetOpen(true);
-	}, []);
-
 	const handleUserSettings = useCallback(() => {
 		router.push("/dashboard/user/settings");
 	}, [router]);
-
-	const handleSearchSpaceSettings = useCallback(
-		(id: number) => {
-			router.push(`/dashboard/${id}/settings`);
-		},
-		[router]
-	);
-
-	const handleDeleteSearchSpace = useCallback(
-		async (id: number) => {
-			await deleteSearchSpace({ id });
-			refetchSearchSpaces();
-			if (Number(searchSpaceId) === id && searchSpaces.length > 1) {
-				const remaining = searchSpaces.filter((s) => s.id !== id);
-				if (remaining.length > 0) {
-					router.push(`/dashboard/${remaining[0].id}/new-chat`);
-				}
-			} else if (searchSpaces.length === 1) {
-				router.push("/dashboard");
-			}
-		},
-		[deleteSearchSpace, refetchSearchSpaces, searchSpaceId, searchSpaces, router]
-	);
 
 	const handleNavItemClick = useCallback(
 		(item: NavItem) => {
@@ -399,7 +368,6 @@ export function LayoutDataProvider({
 				user={{ email: user?.email || "", name: user?.email?.split("@")[0] }}
 				onSettings={handleSettings}
 				onManageMembers={handleManageMembers}
-				onSeeAllSearchSpaces={handleSeeAllSearchSpaces}
 				onUserSettings={handleUserSettings}
 				onLogout={handleLogout}
 				pageUsage={pageUsage}
@@ -468,20 +436,6 @@ export function LayoutDataProvider({
 				onOpenChange={setIsAllNotesSidebarOpen}
 				searchSpaceId={searchSpaceId}
 				onAddNote={handleAddNote}
-			/>
-
-			{/* All Search Spaces Sheet */}
-			<AllSearchSpacesSheet
-				open={isAllSearchSpacesSheetOpen}
-				onOpenChange={setIsAllSearchSpacesSheetOpen}
-				searchSpaces={searchSpaces}
-				onSearchSpaceSelect={handleSearchSpaceSelect}
-				onCreateNew={() => {
-					setIsAllSearchSpacesSheetOpen(false);
-					setIsCreateSearchSpaceDialogOpen(true);
-				}}
-				onSettings={handleSearchSpaceSettings}
-				onDelete={handleDeleteSearchSpace}
 			/>
 
 			{/* Create Search Space Dialog */}
