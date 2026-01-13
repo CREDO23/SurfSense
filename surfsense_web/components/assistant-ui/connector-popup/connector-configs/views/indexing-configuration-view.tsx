@@ -166,15 +166,12 @@ export const IndexingConfigurationView: FC<IndexingConfigurationViewProps> = ({
 										/>
 									)}
 
-								{/* Periodic sync - not shown for Google Drive */}
-								{config.connectorType !== "GOOGLE_DRIVE_CONNECTOR" && (
-									<PeriodicSyncConfig
-										enabled={periodicEnabled}
-										frequencyMinutes={frequencyMinutes}
-										onEnabledChange={onPeriodicEnabledChange}
-										onFrequencyChange={onFrequencyChange}
-									/>
-								)}
+								<PeriodicSyncConfig
+								enabled={periodicEnabled}
+								frequencyMinutes={frequencyMinutes}
+								onEnabledChange={onPeriodicEnabledChange}
+								onFrequencyChange={onFrequencyChange}
+							/>
 							</>
 						)}
 
