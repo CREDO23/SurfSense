@@ -218,15 +218,12 @@ export const ConnectorEditView: FC<ConnectorEditViewProps> = ({
 										/>
 									)}
 
-								{/* Periodic sync - not shown for Google Drive */}
-								{connector.connector_type !== "GOOGLE_DRIVE_CONNECTOR" && (
-									<PeriodicSyncConfig
-										enabled={periodicEnabled}
-										frequencyMinutes={frequencyMinutes}
-										onEnabledChange={onPeriodicEnabledChange}
-										onFrequencyChange={onFrequencyChange}
-									/>
-								)}
+								<PeriodicSyncConfig
+									enabled={periodicEnabled}
+									frequencyMinutes={frequencyMinutes}
+									onEnabledChange={onPeriodicEnabledChange}
+									onFrequencyChange={onFrequencyChange}
+								/>
 							</>
 						)}
 
