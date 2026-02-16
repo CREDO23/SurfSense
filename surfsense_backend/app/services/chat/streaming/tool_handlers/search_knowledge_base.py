@@ -1,5 +1,11 @@
 from typing import Any
 
+from app.services.chat.streaming.tool_handlers.helpers import build_tool_result
+
+# =============================================================================
+# Thinking Step - Start
+# =============================================================================
+
 
 def build_search_knowledge_base_start_step(tool_input: Any) -> dict[str, Any]:
     """Build thinking step config for search_knowledge_base tool start."""
@@ -10,6 +16,11 @@ def build_search_knowledge_base_start_step(tool_input: Any) -> dict[str, Any]:
         "title": "Searching knowledge base",
         "items": [f"Query: {query[:100]}{'...' if len(query) > 100 else ''}"],
     }
+
+
+# =============================================================================
+# Thinking Step - End
+# =============================================================================
 
 
 def build_search_knowledge_base_end_step(
@@ -27,3 +38,16 @@ def build_search_knowledge_base_end_step(
         "title": "Searching knowledge base",
         "items": completed_items,
     }
+
+
+# =============================================================================
+# Output Formatting
+# =============================================================================
+
+
+def format_search_knowledge_base_output(tool_output: Any) -> dict[str, Any]:
+    return build_tool_result(
+        output={"status": "completed", "result_length": len(str(tool_output))},
+        terminal_message="Knowledge base search completed",
+        terminal_status="success",
+    )

@@ -1,5 +1,15 @@
 from typing import Any
 
+from app.services.chat.streaming.tool_handlers.helpers import (
+    build_tool_result,
+    extract_error_message,
+    normalize_tool_output,
+)
+
+# =============================================================================
+# Thinking Step - Start
+# =============================================================================
+
 
 def build_generate_podcast_start_step(tool_input: Any) -> dict[str, Any]:
     """Build thinking step config for generate_podcast tool start."""
@@ -19,6 +29,11 @@ def build_generate_podcast_start_step(tool_input: Any) -> dict[str, Any]:
             "Preparing audio generation...",
         ],
     }
+
+
+# =============================================================================
+# Thinking Step - End
+# =============================================================================
 
 
 def build_generate_podcast_end_step(
@@ -64,3 +79,24 @@ def build_generate_podcast_end_step(
         "title": "Generating podcast",
         "items": completed_items,
     }
+
+
+# =============================================================================
+# Output Formatting
+# =============================================================================
+
+
+def format_podcast_generation_output(tool_output: Any) -> dict[str, Any]:
+    output_data = normalize_tool_output(tool_output)
+
+    if isinstance(tool_output, dict) and tool_output.get("status") == "success":
+        terminal_message = (
+            f"Podcast generated successfully: {tool_output.get('title', 'Podcast')}"
+        )
+        terminal_status = "success"
+    else:
+        error_msg = extract_error_message(tool_output)
+        terminal_message = f"Podcast generation failed: {error_msg}"
+        terminal_status = "error"
+
+    return build_tool_result(output_data, terminal_message, terminal_status)

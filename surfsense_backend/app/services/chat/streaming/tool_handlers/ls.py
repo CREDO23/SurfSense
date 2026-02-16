@@ -1,5 +1,9 @@
 from typing import Any
 
+# =============================================================================
+# Thinking Step - End
+# =============================================================================
+
 
 def build_ls_end_step(tool_output: Any, previous_items: list[str]) -> dict[str, Any]:
     """Build thinking step config for ls tool end."""

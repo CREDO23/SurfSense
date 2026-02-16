@@ -1,9 +1,13 @@
 from typing import Any
 
-from app.services.chat.streaming.tool_output_formatters.helpers import (
+from app.services.chat.streaming.tool_handlers.helpers import (
     build_tool_result,
     normalize_tool_output,
 )
+
+# =============================================================================
+# Output Formatting
+# =============================================================================
 
 
 def format_notion_tool_output(tool_output: Any) -> dict[str, Any]:

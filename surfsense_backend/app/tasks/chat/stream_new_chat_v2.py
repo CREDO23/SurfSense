@@ -36,13 +36,11 @@ from app.services.chat.streaming.event_extractors import (
     extract_tool_output_from_end_event,
 )
 from app.services.chat.streaming.stream_state import StreamState
-from app.services.chat.streaming.thinking_step_end_dispatcher import (
+from app.services.chat.streaming.tool_event_handler import (
     yield_thinking_step_end,
-)
-from app.services.chat.streaming.thinking_step_start_dispatcher import (
     yield_thinking_step_start,
+    yield_tool_output_events,
 )
-from app.services.chat.streaming.tool_output_dispatcher import yield_tool_output_events
 from app.services.chat_session_state_service import (
     clear_ai_responding,
     set_ai_responding,
