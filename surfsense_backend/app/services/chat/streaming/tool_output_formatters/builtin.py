@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.services.chat.streaming.tool_handlers.helpers import (
+from app.services.chat.streaming.tool_output_formatters.helpers import (
     build_tool_result,
     extract_error_message,
     normalize_tool_output,

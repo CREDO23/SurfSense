@@ -36,7 +36,7 @@ from app.services.chat.streaming.event_transformers import (
     extract_tool_output_from_end_event,
 )
 from app.services.chat.streaming.stream_state import StreamState
-from app.services.chat.streaming.tool_handlers import (
+from app.services.chat.streaming.tool_output_formatters import (
     format_display_image_output,
     format_generic_tool_output,
     format_link_preview_output,
