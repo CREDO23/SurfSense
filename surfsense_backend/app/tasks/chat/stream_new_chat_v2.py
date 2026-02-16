@@ -51,6 +51,8 @@ from app.services.chat.streaming.tool_thinking_steps import (
     build_display_image_start_step,
     build_generate_podcast_end_step,
     build_generate_podcast_start_step,
+    build_generate_report_end_step,
+    build_generate_report_start_step,
     build_link_preview_end_step,
     build_link_preview_start_step,
     build_scrape_webpage_end_step,
@@ -339,33 +341,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "generate_report":
-                report_topic = (
-                    tool_input.get("topic", "Report")
-                    if isinstance(tool_input, dict)
-                    else "Report"
-                )
-                report_style = (
-                    tool_input.get("report_style", "detailed")
-                    if isinstance(tool_input, dict)
-                    else "detailed"
-                )
-                content_len = len(
-                    tool_input.get("source_content", "")
-                    if isinstance(tool_input, dict)
-                    else ""
-                )
-                state.last_active_step_title = "Generating report"
-                state.last_active_step_items = [
-                    f"Topic: {report_topic}",
-                    f"Style: {report_style}",
-                    f"Source content: {content_len:,} characters",
-                    "Generating report with LLM...",
-                ]
+                step_config = build_generate_report_start_step(tool_input)
+                state.last_active_step_title = step_config["title"]
+                state.last_active_step_items = step_config["items"]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title="Generating report",
+                    title=step_config["title"],
                     status="in_progress",
-                    items=state.last_active_step_items,
+                    items=step_config["items"],
                 )
             else:
                 state.last_active_step_title = f"Using {tool_name.replace('_', ' ')}"
@@ -445,46 +428,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "generate_report":
-                report_status = (
-                    tool_output.get("status", "unknown")
-                    if isinstance(tool_output, dict)
-                    else "unknown"
+                step_config = build_generate_report_end_step(
+                    tool_output, state.last_active_step_items
                 )
-                report_title = (
-                    tool_output.get("title", "Report")
-                    if isinstance(tool_output, dict)
-                    else "Report"
-                )
-                word_count = (
-                    tool_output.get("word_count", 0)
-                    if isinstance(tool_output, dict)
-                    else 0
-                )
-
-                if report_status == "ready":
-                    completed_items = [
-                        f"Title: {report_title}",
-                        f"Words: {word_count:,}",
-                        "Report generated successfully",
-                    ]
-                elif report_status == "failed":
-                    error_msg = (
-                        tool_output.get("error", "Unknown error")
-                        if isinstance(tool_output, dict)
-                        else "Unknown error"
-                    )
-                    completed_items = [
-                        f"Title: {report_title}",
-                        f"Error: {error_msg[:50]}",
-                    ]
-                else:
-                    completed_items = state.last_active_step_items
-
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Generating report",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "ls":
                 if isinstance(tool_output, dict):
