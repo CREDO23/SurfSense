@@ -14,17 +14,13 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from langchain_core.messages import HumanMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db import ChatVisibility, Document, SurfsenseDocsDocument
+from app.db import ChatVisibility
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
 from app.services.chat.streaming.agent_builder import build_agent
-from app.services.chat.streaming.context_formatters import (
-    format_mentioned_documents_as_context,
-    format_mentioned_surfsense_docs_as_context,
-)
+from app.services.chat.streaming.context_builder import build_agent_context
 from app.services.chat.streaming.event_extractors import (
     extract_content_from_chat_stream_event,
     extract_tool_info_from_start_event,
@@ -42,7 +38,6 @@ from app.services.chat_session_state_service import (
     set_ai_responding,
 )
 from app.services.new_streaming_service import VercelStreamingService
-from app.utils.content_utils import bootstrap_history_from_db
 
 
 def extract_todos_from_deepagents(command_output) -> dict:
@@ -273,94 +268,18 @@ async def stream_new_chat(
             thread_visibility=thread_visibility,
         )
 
-        # Build input with message history
-        visibility = thread_visibility or ChatVisibility.PRIVATE
-        langchain_messages = []
-
-        # Bootstrap history for cloned chats (no LangGraph checkpoint exists yet)
-        if needs_history_bootstrap:
-            langchain_messages = await bootstrap_history_from_db(
-                session, chat_id, thread_visibility=visibility
-            )
-
-            # Clear the flag so we don't bootstrap again on next message
-            from app.db import NewChatThread
-
-            thread_result = await session.execute(
-                select(NewChatThread).filter(NewChatThread.id == chat_id)
-            )
-            thread = thread_result.scalars().first()
-            if thread:
-                thread.needs_history_bootstrap = False
-                await session.commit()
-
-        # Fetch mentioned documents if any (with chunks for proper citations)
-        mentioned_documents: list[Document] = []
-        if mentioned_document_ids:
-            from sqlalchemy.orm import selectinload as doc_selectinload
-
-            result = await session.execute(
-                select(Document)
-                .options(doc_selectinload(Document.chunks))
-                .filter(
-                    Document.id.in_(mentioned_document_ids),
-                    Document.search_space_id == search_space_id,
-                )
-            )
-            mentioned_documents = list(result.scalars().all())
-
-        # Fetch mentioned SurfSense docs if any
-        mentioned_surfsense_docs: list[SurfsenseDocsDocument] = []
-        if mentioned_surfsense_doc_ids:
-            from sqlalchemy.orm import selectinload
-
-            result = await session.execute(
-                select(SurfsenseDocsDocument)
-                .options(selectinload(SurfsenseDocsDocument.chunks))
-                .filter(
-                    SurfsenseDocsDocument.id.in_(mentioned_surfsense_doc_ids),
-                )
-            )
-            mentioned_surfsense_docs = list(result.scalars().all())
-
-        # Format the user query with context (mentioned documents + SurfSense docs)
-        final_query = user_query
-        context_parts = []
-
-        if mentioned_documents:
-            context_parts.append(
-                format_mentioned_documents_as_context(mentioned_documents)
-            )
-
-        if mentioned_surfsense_docs:
-            context_parts.append(
-                format_mentioned_surfsense_docs_as_context(mentioned_surfsense_docs)
-            )
-
-        if context_parts:
-            context = "\n\n".join(context_parts)
-            final_query = f"{context}\n\n<user_query>{user_query}</user_query>"
-
-        if visibility == ChatVisibility.SEARCH_SPACE and current_user_display_name:
-            final_query = f"**[{current_user_display_name}]:** {final_query}"
-
-        # if messages:
-        #     # Convert frontend messages to LangChain format
-        #     for msg in messages:
-        #         if msg.role == "user":
-        #             langchain_messages.append(HumanMessage(content=msg.content))
-        #         elif msg.role == "assistant":
-        #             langchain_messages.append(AIMessage(content=msg.content))
-        # else:
-        # Fallback: just use the current user query with attachment context
-        langchain_messages.append(HumanMessage(content=final_query))
-
-        input_state = {
-            # Lets not pass this message atm because we are using the checkpointer to manage the conversation history
-            # We will use this to simulate group chat functionality in the future
-            "messages": langchain_messages,
-            "search_space_id": search_space_id,
-        }
+        # Build agent context
+        input_state = await build_agent_context(
+            user_query=user_query,
+            search_space_id=search_space_id,
+            chat_id=chat_id,
+            session=session,
+            thread_visibility=thread_visibility,
+            mentioned_document_ids=mentioned_document_ids,
+            mentioned_surfsense_doc_ids=mentioned_surfsense_doc_ids,
+            needs_history_bootstrap=needs_history_bootstrap,
+            current_user_display_name=current_user_display_name,
+        )
 
         # Configure LangGraph with thread_id for memory
         # If checkpoint_id is provided, fork from that checkpoint (for edit/reload)
@@ -378,7 +297,7 @@ async def stream_new_chat(
         yield streaming_service.format_start_step()
 
         # Initial thinking step - analyzing the request
-        if mentioned_documents or mentioned_surfsense_docs:
+        if mentioned_document_ids or mentioned_surfsense_doc_ids:
             initial_title = "Analyzing referenced content"
             action_verb = "Analyzing"
         else:
@@ -389,29 +308,19 @@ async def stream_new_chat(
         query_text = user_query[:80] + ("..." if len(user_query) > 80 else "")
         processing_parts.append(query_text)
 
-        if mentioned_documents:
-            doc_names = []
-            for doc in mentioned_documents:
-                title = doc.title
-                if len(title) > 30:
-                    title = title[:27] + "..."
-                doc_names.append(title)
-            if len(doc_names) == 1:
-                processing_parts.append(f"[{doc_names[0]}]")
+        if mentioned_document_ids:
+            count = len(mentioned_document_ids)
+            if count == 1:
+                processing_parts.append("[1 document]")
             else:
-                processing_parts.append(f"[{len(doc_names)} documents]")
+                processing_parts.append(f"[{count} documents]")
 
-        if mentioned_surfsense_docs:
-            doc_names = []
-            for doc in mentioned_surfsense_docs:
-                title = doc.title
-                if len(title) > 30:
-                    title = title[:27] + "..."
-                doc_names.append(title)
-            if len(doc_names) == 1:
-                processing_parts.append(f"[{doc_names[0]}]")
+        if mentioned_surfsense_doc_ids:
+            count = len(mentioned_surfsense_doc_ids)
+            if count == 1:
+                processing_parts.append("[1 doc]")
             else:
-                processing_parts.append(f"[{len(doc_names)} docs]")
+                processing_parts.append(f"[{count} docs]")
 
         initial_items = [f"{action_verb}: {' '.join(processing_parts)}"]
         initial_step_id = "thinking-1"

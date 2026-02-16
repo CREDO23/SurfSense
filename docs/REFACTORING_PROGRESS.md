@@ -61,19 +61,32 @@
 
 ---
 
-### Step 3: Message Builder (~60 lines) 📋 NEXT
+### Step 3: Context Builder ✅ COMPLETE
 
-Extract context fetching and message building:
-- Document fetching (mentioned documents)
-- SurfSense docs fetching
-- Context formatting
-- Message construction with @mentions
+**Created:** `app/services/chat/streaming/context_builder.py` (124 lines)
 
-**Target:** Extend `context_formatters.py` or create `message_builder.py`
+**Extracted:**
+- History bootstrapping for cloned chats
+- Document fetching (mentioned documents with chunks)
+- SurfSense docs fetching (with chunks)
+- Context formatting with existing formatters
+- User message construction with @mentions
+- Display name handling for search space chats
+
+**Changes:**
+- `stream_new_chat_v2.py`: 610 → 519 lines (91 lines removed, 14.9% reduction)
+- Removed 4 unused imports (HumanMessage, Document, SurfsenseDocsDocument, bootstrap_history_from_db)
+- Simplified initial thinking step logic (now uses IDs instead of fetched docs)
+
+**Files Modified:**
+- Created: `app/services/chat/streaming/context_builder.py`
+- Updated: `app/tasks/chat/stream_new_chat_v2.py`
+
+**Status:** ✅ Ruff passes, ready for testing
 
 ---
 
-### Step 4: Title Generator (~40 lines) 📋 PENDING
+### Step 4: Title Generator (~40 lines) 📋 NEXT
 
 Extract title generation logic:
 - LLM-based title generation
@@ -102,7 +115,8 @@ Extract resume-specific logic:
 | 1 | `stream_new_chat` | 1,313 | 694 | 47% |
 | 2.1 | LLM Config Loading | 694 | 646 | 7% |
 | 2.2 | Agent Builder | 646 | 610 | 5.6% |
-| **Current Total** | **stream_new_chat_v2.py** | **1,313** | **610** | **53.5%** |
+| 2.3 | Context Builder | 610 | 519 | 14.9% |
+| **Current Total** | **stream_new_chat_v2.py** | **1,313** | **519** | **60.5%** |
 
 **Target after Phase 2:** ~200 lines (85% total reduction)
 
@@ -112,7 +126,8 @@ Extract resume-specific logic:
 
 1. ✅ Step 1: LLM Config Loading - **COMPLETE**
 2. ✅ Step 2: Agent Builder - **COMPLETE**
-3. 🔄 Step 3: Message Builder - **START NOW**
-4. Then: Steps 4-5
-5. Manual testing
-6. Automated testing (Phase 4)
+3. ✅ Step 3: Context Builder - **COMPLETE**
+4. 🔄 Step 4: Title Generator - **START NOW**
+5. Then: Step 5 (Resume Handler)
+6. Manual testing
+7. Automated testing (Phase 4)
