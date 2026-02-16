@@ -18,17 +18,9 @@ from langchain_core.messages import HumanMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.agents.new_chat.chat_deepagent import create_surfsense_deep_agent
-from app.agents.new_chat.checkpointer import get_checkpointer
-from app.agents.new_chat.llm_config import (
-    AgentConfig,
-    create_chat_litellm_from_agent_config,
-    create_chat_litellm_from_config,
-    load_agent_config,
-    load_llm_config_from_yaml,
-)
 from app.db import ChatVisibility, Document, SurfsenseDocsDocument
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
+from app.services.chat.streaming.agent_builder import build_agent
 from app.services.chat.streaming.context_formatters import (
     format_mentioned_documents_as_context,
     format_mentioned_surfsense_docs_as_context,
@@ -38,6 +30,7 @@ from app.services.chat.streaming.event_extractors import (
     extract_tool_info_from_start_event,
     extract_tool_output_from_end_event,
 )
+from app.services.chat.streaming.llm_config_loader import load_llm_config
 from app.services.chat.streaming.stream_state import StreamState
 from app.services.chat.streaming.tool_event_handler import (
     yield_thinking_step_end,
@@ -48,7 +41,6 @@ from app.services.chat_session_state_service import (
     clear_ai_responding,
     set_ai_responding,
 )
-from app.services.connector_service import ConnectorService
 from app.services.new_streaming_service import VercelStreamingService
 from app.utils.content_utils import bootstrap_history_from_db
 
@@ -255,76 +247,34 @@ async def stream_new_chat(
         # Mark AI as responding to this user for live collaboration
         if user_id:
             await set_ai_responding(session, chat_id, UUID(user_id))
-        # Load LLM config - supports both YAML (negative IDs) and database (positive IDs)
-        agent_config: AgentConfig | None = None
 
-        if llm_config_id >= 0:
-            # Positive ID: Load from NewLLMConfig database table
-            agent_config = await load_agent_config(
-                session=session,
-                config_id=llm_config_id,
-                search_space_id=search_space_id,
-            )
-            if not agent_config:
-                yield streaming_service.format_error(
-                    f"Failed to load NewLLMConfig with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-
-            # Create ChatLiteLLM from AgentConfig
-            llm = create_chat_litellm_from_agent_config(agent_config)
-        else:
-            # Negative ID: Load from YAML (global configs)
-            llm_config = load_llm_config_from_yaml(llm_config_id=llm_config_id)
-            if not llm_config:
-                yield streaming_service.format_error(
-                    f"Failed to load LLM config with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-
-            # Create ChatLiteLLM from YAML config dict
-            llm = create_chat_litellm_from_config(llm_config)
-            # Create AgentConfig from YAML for consistency (uses defaults for prompt settings)
-            agent_config = AgentConfig.from_yaml_config(llm_config)
-
-        if not llm:
-            yield streaming_service.format_error("Failed to create LLM instance")
+        # Load LLM config
+        config_result = await load_llm_config(
+            llm_config_id=llm_config_id,
+            session=session,
+            search_space_id=search_space_id,
+        )
+        if config_result.error:
+            yield streaming_service.format_error(config_result.error)
             yield streaming_service.format_done()
             return
 
-        # Create connector service
-        connector_service = ConnectorService(session, search_space_id=search_space_id)
+        llm = config_result.llm
+        agent_config = config_result.agent_config
 
-        # Get Firecrawl API key from webcrawler connector if configured
-        from app.db import SearchSourceConnectorType
-
-        firecrawl_api_key = None
-        webcrawler_connector = await connector_service.get_connector_by_type(
-            SearchSourceConnectorType.WEBCRAWLER_CONNECTOR, search_space_id
-        )
-        if webcrawler_connector and webcrawler_connector.config:
-            firecrawl_api_key = webcrawler_connector.config.get("FIRECRAWL_API_KEY")
-
-        # Get the PostgreSQL checkpointer for persistent conversation memory
-        checkpointer = await get_checkpointer()
-
-        visibility = thread_visibility or ChatVisibility.PRIVATE
-        agent = await create_surfsense_deep_agent(
+        # Build agent with all dependencies
+        agent = await build_agent(
             llm=llm,
-            search_space_id=search_space_id,
-            db_session=session,
-            connector_service=connector_service,
-            checkpointer=checkpointer,
-            user_id=user_id,
-            thread_id=chat_id,
             agent_config=agent_config,
-            firecrawl_api_key=firecrawl_api_key,
-            thread_visibility=visibility,
+            session=session,
+            search_space_id=search_space_id,
+            chat_id=chat_id,
+            user_id=user_id,
+            thread_visibility=thread_visibility,
         )
 
         # Build input with message history
+        visibility = thread_visibility or ChatVisibility.PRIVATE
         langchain_messages = []
 
         # Bootstrap history for cloned chats (no LangGraph checkpoint exists yet)
@@ -590,61 +540,29 @@ async def stream_resume_chat(
         if user_id:
             await set_ai_responding(session, chat_id, UUID(user_id))
 
-        agent_config: AgentConfig | None = None
-        if llm_config_id >= 0:
-            agent_config = await load_agent_config(
-                session=session,
-                config_id=llm_config_id,
-                search_space_id=search_space_id,
-            )
-            if not agent_config:
-                yield streaming_service.format_error(
-                    f"Failed to load NewLLMConfig with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-            llm = create_chat_litellm_from_agent_config(agent_config)
-        else:
-            llm_config = load_llm_config_from_yaml(llm_config_id=llm_config_id)
-            if not llm_config:
-                yield streaming_service.format_error(
-                    f"Failed to load LLM config with id {llm_config_id}"
-                )
-                yield streaming_service.format_done()
-                return
-            llm = create_chat_litellm_from_config(llm_config)
-            agent_config = AgentConfig.from_yaml_config(llm_config)
-
-        if not llm:
-            yield streaming_service.format_error("Failed to create LLM instance")
+        # Load LLM config
+        config_result = await load_llm_config(
+            llm_config_id=llm_config_id,
+            session=session,
+            search_space_id=search_space_id,
+        )
+        if config_result.error:
+            yield streaming_service.format_error(config_result.error)
             yield streaming_service.format_done()
             return
 
-        connector_service = ConnectorService(session, search_space_id=search_space_id)
+        llm = config_result.llm
+        agent_config = config_result.agent_config
 
-        from app.db import SearchSourceConnectorType
-
-        firecrawl_api_key = None
-        webcrawler_connector = await connector_service.get_connector_by_type(
-            SearchSourceConnectorType.WEBCRAWLER_CONNECTOR, search_space_id
-        )
-        if webcrawler_connector and webcrawler_connector.config:
-            firecrawl_api_key = webcrawler_connector.config.get("FIRECRAWL_API_KEY")
-
-        checkpointer = await get_checkpointer()
-        visibility = thread_visibility or ChatVisibility.PRIVATE
-
-        agent = await create_surfsense_deep_agent(
+        # Build agent with all dependencies
+        agent = await build_agent(
             llm=llm,
-            search_space_id=search_space_id,
-            db_session=session,
-            connector_service=connector_service,
-            checkpointer=checkpointer,
-            user_id=user_id,
-            thread_id=chat_id,
             agent_config=agent_config,
-            firecrawl_api_key=firecrawl_api_key,
-            thread_visibility=visibility,
+            session=session,
+            search_space_id=search_space_id,
+            chat_id=chat_id,
+            user_id=user_id,
+            thread_visibility=thread_visibility,
         )
 
         from langgraph.types import Command
