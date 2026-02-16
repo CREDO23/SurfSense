@@ -9,7 +9,6 @@ Supports loading LLM configurations from:
 - NewLLMConfig database table (positive IDs for user-created configs with prompt settings)
 """
 
-import json
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import Any
@@ -30,6 +29,10 @@ from app.agents.new_chat.llm_config import (
 )
 from app.db import ChatVisibility, Document, SurfsenseDocsDocument
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
+from app.services.chat.streaming.context_formatters import (
+    format_mentioned_documents_as_context,
+    format_mentioned_surfsense_docs_as_context,
+)
 from app.services.chat.streaming.event_extractors import (
     extract_content_from_chat_stream_event,
     extract_tool_info_from_start_event,
@@ -50,123 +53,6 @@ from app.services.new_streaming_service import VercelStreamingService
 from app.utils.content_utils import bootstrap_history_from_db
 
 
-def format_mentioned_documents_as_context(documents: list[Document]) -> str:
-    """
-    Format mentioned documents as context for the agent.
-
-    Uses the same XML structure as knowledge_base.format_documents_for_context
-    to ensure citations work properly with chunk IDs.
-    """
-    if not documents:
-        return ""
-
-    context_parts = ["<mentioned_documents>"]
-    context_parts.append(
-        "The user has explicitly mentioned the following documents from their knowledge base. "
-        "These documents are directly relevant to the query and should be prioritized as primary sources. "
-        "Use [citation:CHUNK_ID] format for citations (e.g., [citation:123])."
-    )
-    context_parts.append("")
-
-    for doc in documents:
-        # Build metadata JSON
-        metadata = doc.document_metadata or {}
-        metadata_json = json.dumps(metadata, ensure_ascii=False)
-
-        # Get URL from metadata
-        url = (
-            metadata.get("url")
-            or metadata.get("source")
-            or metadata.get("page_url")
-            or ""
-        )
-
-        context_parts.append("<document>")
-        context_parts.append("<document_metadata>")
-        context_parts.append(f"  <document_id>{doc.id}</document_id>")
-        context_parts.append(
-            f"  <document_type>{doc.document_type.value}</document_type>"
-        )
-        context_parts.append(f"  <title><![CDATA[{doc.title}]]></title>")
-        context_parts.append(f"  <url><![CDATA[{url}]]></url>")
-        context_parts.append(
-            f"  <metadata_json><![CDATA[{metadata_json}]]></metadata_json>"
-        )
-        context_parts.append("</document_metadata>")
-        context_parts.append("")
-        context_parts.append("<document_content>")
-
-        # Use chunks if available (preferred for proper citations)
-        if hasattr(doc, "chunks") and doc.chunks:
-            for chunk in doc.chunks:
-                context_parts.append(
-                    f"  <chunk id='{chunk.id}'><![CDATA[{chunk.content}]]></chunk>"
-                )
-        else:
-            # Fallback to document content if chunks not loaded
-            # Use document ID as chunk ID prefix for consistency
-            context_parts.append(
-                f"  <chunk id='{doc.id}'><![CDATA[{doc.content}]]></chunk>"
-            )
-
-        context_parts.append("</document_content>")
-        context_parts.append("</document>")
-        context_parts.append("")
-
-    context_parts.append("</mentioned_documents>")
-
-    return "\n".join(context_parts)
-
-
-def format_mentioned_surfsense_docs_as_context(
-    documents: list[SurfsenseDocsDocument],
-) -> str:
-    """Format mentioned SurfSense documentation as context for the agent."""
-    if not documents:
-        return ""
-
-    context_parts = ["<mentioned_surfsense_docs>"]
-    context_parts.append(
-        "The user has explicitly mentioned the following SurfSense documentation pages. "
-        "These are official documentation about how to use SurfSense and should be used to answer questions about the application. "
-        "Use [citation:CHUNK_ID] format for citations (e.g., [citation:doc-123])."
-    )
-
-    for doc in documents:
-        metadata_json = json.dumps({"source": doc.source}, ensure_ascii=False)
-
-        context_parts.append("<document>")
-        context_parts.append("<document_metadata>")
-        context_parts.append(f"  <document_id>doc-{doc.id}</document_id>")
-        context_parts.append("  <document_type>SURFSENSE_DOCS</document_type>")
-        context_parts.append(f"  <title><![CDATA[{doc.title}]]></title>")
-        context_parts.append(f"  <url><![CDATA[{doc.source}]]></url>")
-        context_parts.append(
-            f"  <metadata_json><![CDATA[{metadata_json}]]></metadata_json>"
-        )
-        context_parts.append("</document_metadata>")
-        context_parts.append("")
-        context_parts.append("<document_content>")
-
-        if hasattr(doc, "chunks") and doc.chunks:
-            for chunk in doc.chunks:
-                context_parts.append(
-                    f"  <chunk id='doc-{chunk.id}'><![CDATA[{chunk.content}]]></chunk>"
-                )
-        else:
-            context_parts.append(
-                f"  <chunk id='doc-0'><![CDATA[{doc.content}]]></chunk>"
-            )
-
-        context_parts.append("</document_content>")
-        context_parts.append("</document>")
-        context_parts.append("")
-
-    context_parts.append("</mentioned_surfsense_docs>")
-
-    return "\n".join(context_parts)
-
-
 def extract_todos_from_deepagents(command_output) -> dict:
     """
     Extract todos from deepagents' TodoListMiddleware Command output.
@@ -178,11 +64,9 @@ def extract_todos_from_deepagents(command_output) -> dict:
     """
     todos_data = []
     if hasattr(command_output, "update"):
-        # It's a Command object from deepagents
         update = command_output.update
         todos_data = update.get("todos", [])
     elif isinstance(command_output, dict):
-        # Already a dict - check if it has todos directly or in update
         if "todos" in command_output:
             todos_data = command_output.get("todos", [])
         elif "update" in command_output and isinstance(command_output["update"], dict):
