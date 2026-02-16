@@ -30,6 +30,11 @@ from app.agents.new_chat.llm_config import (
 )
 from app.db import ChatVisibility, Document, SurfsenseDocsDocument
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
+from app.services.chat.streaming.event_transformers import (
+    extract_content_from_chat_stream_event,
+    extract_tool_info_from_start_event,
+    extract_tool_output_from_end_event,
+)
 from app.services.chat.streaming.tool_handlers import (
     format_display_image_output,
     format_generic_tool_output,
@@ -260,28 +265,24 @@ async def _stream_agent_events(
         event_type = event.get("event", "")
 
         if event_type == "on_chat_model_stream":
-            chunk = event.get("data", {}).get("chunk")
-            if chunk and hasattr(chunk, "content"):
-                content = chunk.content
-                if content and isinstance(content, str):
-                    if current_text_id is None:
-                        completion_event = complete_current_step()
-                        if completion_event:
-                            yield completion_event
-                        if just_finished_tool:
-                            last_active_step_id = None
-                            last_active_step_title = ""
-                            last_active_step_items = []
-                            just_finished_tool = False
-                        current_text_id = streaming_service.generate_text_id()
-                        yield streaming_service.format_text_start(current_text_id)
-                    yield streaming_service.format_text_delta(current_text_id, content)
-                    accumulated_text += content
+            content = extract_content_from_chat_stream_event(event)
+            if content:
+                if current_text_id is None:
+                    completion_event = complete_current_step()
+                    if completion_event:
+                        yield completion_event
+                    if just_finished_tool:
+                        last_active_step_id = None
+                        last_active_step_title = ""
+                        last_active_step_items = []
+                        just_finished_tool = False
+                    current_text_id = streaming_service.generate_text_id()
+                    yield streaming_service.format_text_start(current_text_id)
+                yield streaming_service.format_text_delta(current_text_id, content)
+                accumulated_text += content
 
         elif event_type == "on_tool_start":
-            tool_name = event.get("name", "unknown_tool")
-            run_id = event.get("run_id", "")
-            tool_input = event.get("data", {}).get("input", {})
+            tool_name, run_id, tool_input = extract_tool_info_from_start_event(event)
 
             if current_text_id is not None:
                 yield streaming_service.format_text_end(current_text_id)
@@ -438,26 +439,7 @@ async def _stream_agent_events(
             )
 
         elif event_type == "on_tool_end":
-            run_id = event.get("run_id", "")
-            tool_name = event.get("name", "unknown_tool")
-            raw_output = event.get("data", {}).get("output", "")
-
-            if hasattr(raw_output, "content"):
-                content = raw_output.content
-                if isinstance(content, str):
-                    try:
-                        tool_output = json.loads(content)
-                    except (json.JSONDecodeError, TypeError):
-                        tool_output = {"result": content}
-                elif isinstance(content, dict):
-                    tool_output = content
-                else:
-                    tool_output = {"result": str(content)}
-            elif isinstance(raw_output, dict):
-                tool_output = raw_output
-            else:
-                tool_output = {"result": str(raw_output) if raw_output else "completed"}
-
+            tool_name, run_id, tool_output = extract_tool_output_from_end_event(event)
             tool_call_id = f"call_{run_id[:32]}" if run_id else "call_unknown"
             original_step_id = tool_step_ids.get(
                 run_id, f"{step_prefix}-unknown-{run_id[:8]}"
