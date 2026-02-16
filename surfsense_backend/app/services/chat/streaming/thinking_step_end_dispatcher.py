@@ -14,14 +14,14 @@ from app.services.chat.streaming.tool_thinking_steps import (
 from app.services.new_streaming_service import VercelStreamingService
 
 
-async def yield_thinking_step_completion(
+async def yield_thinking_step_end(
     tool_name: str,
     tool_output: Any,
     state: StreamState,
     step_id: str,
     streaming_service: VercelStreamingService,
 ) -> AsyncGenerator[str, None]:
-    """Dispatch to appropriate thinking step builder and yield completion event."""
+    """Dispatch to appropriate thinking step builder and yield end event."""
     if tool_name == "search_knowledge_base":
         step_config = build_search_knowledge_base_end_step(
             tool_output, state.last_active_step_items

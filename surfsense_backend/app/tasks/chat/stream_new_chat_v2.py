@@ -36,18 +36,13 @@ from app.services.chat.streaming.event_transformers import (
     extract_tool_output_from_end_event,
 )
 from app.services.chat.streaming.stream_state import StreamState
-from app.services.chat.streaming.thinking_step_completion_dispatcher import (
-    yield_thinking_step_completion,
+from app.services.chat.streaming.thinking_step_end_dispatcher import (
+    yield_thinking_step_end,
+)
+from app.services.chat.streaming.thinking_step_start_dispatcher import (
+    yield_thinking_step_start,
 )
 from app.services.chat.streaming.tool_output_dispatcher import yield_tool_output_events
-from app.services.chat.streaming.tool_thinking_steps import (
-    build_display_image_start_step,
-    build_generate_podcast_start_step,
-    build_generate_report_start_step,
-    build_link_preview_start_step,
-    build_scrape_webpage_start_step,
-    build_search_knowledge_base_start_step,
-)
 from app.services.chat_session_state_service import (
     clear_ai_responding,
     set_ai_responding,
@@ -278,74 +273,10 @@ async def _stream_agent_events(
             state.register_tool_step(run_id, tool_step_id)
             state.last_active_step_id = tool_step_id
 
-            if tool_name == "search_knowledge_base":
-                step_config = build_search_knowledge_base_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            elif tool_name == "link_preview":
-                step_config = build_link_preview_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            elif tool_name == "display_image":
-                step_config = build_display_image_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            elif tool_name == "scrape_webpage":
-                step_config = build_scrape_webpage_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            elif tool_name == "generate_podcast":
-                step_config = build_generate_podcast_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            elif tool_name == "generate_report":
-                step_config = build_generate_report_start_step(tool_input)
-                state.last_active_step_title = step_config["title"]
-                state.last_active_step_items = step_config["items"]
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=step_config["title"],
-                    status="in_progress",
-                    items=step_config["items"],
-                )
-            else:
-                state.last_active_step_title = f"Using {tool_name.replace('_', ' ')}"
-                state.last_active_step_items = []
-                yield streaming_service.format_thinking_step(
-                    step_id=tool_step_id,
-                    title=state.last_active_step_title,
-                    status="in_progress",
-                )
+            async for event in yield_thinking_step_start(
+                tool_name, tool_input, state, tool_step_id, streaming_service
+            ):
+                yield event
 
             tool_call_id = (
                 f"call_{run_id[:32]}"
@@ -365,7 +296,7 @@ async def _stream_agent_events(
             original_step_id = state.get_tool_step_id(run_id)
             state.mark_step_completed(original_step_id)
 
-            async for event in yield_thinking_step_completion(
+            async for event in yield_thinking_step_end(
                 tool_name, tool_output, state, original_step_id, streaming_service
             ):
                 yield event
