@@ -55,6 +55,7 @@ from app.services.chat.streaming.tool_thinking_steps import (
     build_generate_report_start_step,
     build_link_preview_end_step,
     build_link_preview_start_step,
+    build_ls_end_step,
     build_scrape_webpage_end_step,
     build_scrape_webpage_start_step,
     build_search_knowledge_base_end_step,
@@ -438,35 +439,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "ls":
-                if isinstance(tool_output, dict):
-                    ls_output = tool_output.get("result", "")
-                elif isinstance(tool_output, str):
-                    ls_output = tool_output
-                else:
-                    ls_output = str(tool_output) if tool_output else ""
-                file_names: list[str] = []
-                if ls_output:
-                    for line in ls_output.strip().split("\n"):
-                        line = line.strip()
-                        if line:
-                            name = line.rstrip("/").split("/")[-1]
-                            if name and len(name) <= 40:
-                                file_names.append(name)
-                            elif name:
-                                file_names.append(name[:37] + "...")
-                if file_names:
-                    if len(file_names) <= 5:
-                        completed_items = [f"[{name}]" for name in file_names]
-                    else:
-                        completed_items = [f"[{name}]" for name in file_names[:4]]
-                        completed_items.append(f"(+{len(file_names) - 4} more)")
-                else:
-                    completed_items = ["No files found"]
+                step_config = build_ls_end_step(
+                    tool_output, state.last_active_step_items
+                )
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Exploring files",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             else:
                 yield streaming_service.format_thinking_step(
