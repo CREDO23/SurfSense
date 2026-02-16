@@ -49,6 +49,8 @@ from app.services.chat.streaming.tool_output_formatters import (
 from app.services.chat.streaming.tool_thinking_steps import (
     build_display_image_end_step,
     build_display_image_start_step,
+    build_link_preview_end_step,
+    build_link_preview_start_step,
     build_scrape_webpage_end_step,
     build_scrape_webpage_start_step,
     build_search_knowledge_base_end_step,
@@ -295,20 +297,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "link_preview":
-                url = (
-                    tool_input.get("url", "")
-                    if isinstance(tool_input, dict)
-                    else str(tool_input)
-                )
-                state.last_active_step_title = "Fetching link preview"
-                state.last_active_step_items = [
-                    f"URL: {url[:80]}{'...' if len(url) > 80 else ''}"
-                ]
+                step_config = build_link_preview_start_step(tool_input)
+                state.last_active_step_title = step_config["title"]
+                state.last_active_step_items = step_config["items"]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title="Fetching link preview",
+                    title=step_config["title"],
                     status="in_progress",
-                    items=state.last_active_step_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "display_image":
                 step_config = build_display_image_start_step(tool_input)
@@ -420,28 +416,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "link_preview":
-                if isinstance(tool_output, dict):
-                    title = tool_output.get("title", "Link")
-                    domain = tool_output.get("domain", "")
-                    has_error = "error" in tool_output
-                    if has_error:
-                        completed_items = [
-                            *state.last_active_step_items,
-                            f"Error: {tool_output.get('error', 'Failed to fetch')}",
-                        ]
-                    else:
-                        completed_items = [
-                            *state.last_active_step_items,
-                            f"Title: {title[:60]}{'...' if len(title) > 60 else ''}",
-                            f"Domain: {domain}" if domain else "Preview loaded",
-                        ]
-                else:
-                    completed_items = [*state.last_active_step_items, "Preview loaded"]
+                step_config = build_link_preview_end_step(
+                    tool_output, state.last_active_step_items
+                )
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Fetching link preview",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "display_image":
                 step_config = build_display_image_end_step(
