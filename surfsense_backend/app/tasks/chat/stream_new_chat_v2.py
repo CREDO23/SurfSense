@@ -30,7 +30,7 @@ from app.agents.new_chat.llm_config import (
 )
 from app.db import ChatVisibility, Document, SurfsenseDocsDocument
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
-from app.services.chat.streaming.event_transformers import (
+from app.services.chat.streaming.event_extractors import (
     extract_content_from_chat_stream_event,
     extract_tool_info_from_start_event,
     extract_tool_output_from_end_event,
