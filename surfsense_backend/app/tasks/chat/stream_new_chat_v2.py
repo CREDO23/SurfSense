@@ -35,6 +35,7 @@ from app.services.chat.streaming.event_transformers import (
     extract_tool_info_from_start_event,
     extract_tool_output_from_end_event,
 )
+from app.services.chat.streaming.stream_state import StreamState
 from app.services.chat.streaming.tool_handlers import (
     format_display_image_output,
     format_generic_tool_output,
@@ -232,34 +233,12 @@ async def _stream_agent_events(
     Yields:
         SSE-formatted strings for each event.
     """
-    accumulated_text = ""
-    current_text_id: str | None = None
-    thinking_step_counter = 1 if initial_step_id else 0
-    tool_step_ids: dict[str, str] = {}
-    completed_step_ids: set[str] = set()
-    last_active_step_id: str | None = initial_step_id
-    last_active_step_title: str = initial_step_title
-    last_active_step_items: list[str] = initial_step_items or []
-    just_finished_tool: bool = False
-
-    def next_thinking_step_id() -> str:
-        nonlocal thinking_step_counter
-        thinking_step_counter += 1
-        return f"{step_prefix}-{thinking_step_counter}"
-
-    def complete_current_step() -> str | None:
-        nonlocal last_active_step_id
-        if last_active_step_id and last_active_step_id not in completed_step_ids:
-            completed_step_ids.add(last_active_step_id)
-            event = streaming_service.format_thinking_step(
-                step_id=last_active_step_id,
-                title=last_active_step_title,
-                status="completed",
-                items=last_active_step_items if last_active_step_items else None,
-            )
-            last_active_step_id = None
-            return event
-        return None
+    state = StreamState(
+        step_prefix=step_prefix,
+        initial_step_id=initial_step_id,
+        initial_step_title=initial_step_title,
+        initial_step_items=initial_step_items,
+    )
 
     async for event in agent.astream_events(input_data, config=config, version="v2"):
         event_type = event.get("event", "")
@@ -267,36 +246,35 @@ async def _stream_agent_events(
         if event_type == "on_chat_model_stream":
             content = extract_content_from_chat_stream_event(event)
             if content:
-                if current_text_id is None:
-                    completion_event = complete_current_step()
+                if state.current_text_id is None:
+                    completion_event = state.complete_current_step(streaming_service)
                     if completion_event:
                         yield completion_event
-                    if just_finished_tool:
-                        last_active_step_id = None
-                        last_active_step_title = ""
-                        last_active_step_items = []
-                        just_finished_tool = False
-                    current_text_id = streaming_service.generate_text_id()
-                    yield streaming_service.format_text_start(current_text_id)
-                yield streaming_service.format_text_delta(current_text_id, content)
-                accumulated_text += content
+                    if state.just_finished_tool:
+                        state.clear_step_state_after_tool()
+                    state.current_text_id = streaming_service.generate_text_id()
+                    yield streaming_service.format_text_start(state.current_text_id)
+                yield streaming_service.format_text_delta(
+                    state.current_text_id, content
+                )
+                state.add_text(content)
 
         elif event_type == "on_tool_start":
             tool_name, run_id, tool_input = extract_tool_info_from_start_event(event)
 
-            if current_text_id is not None:
-                yield streaming_service.format_text_end(current_text_id)
-                current_text_id = None
+            if state.current_text_id is not None:
+                yield streaming_service.format_text_end(state.current_text_id)
+                state.end_text_block()
 
-            if last_active_step_title != "Synthesizing response":
-                completion_event = complete_current_step()
+            if state.state.last_active_step_title != "Synthesizing response":
+                completion_event = state.complete_current_step(streaming_service)
                 if completion_event:
                     yield completion_event
 
-            just_finished_tool = False
-            tool_step_id = next_thinking_step_id()
-            tool_step_ids[run_id] = tool_step_id
-            last_active_step_id = tool_step_id
+            state.just_finished_tool = False
+            tool_step_id = state.next_thinking_step_id()
+            state.register_tool_step(run_id, tool_step_id)
+            state.last_active_step_id = tool_step_id
 
             if tool_name == "search_knowledge_base":
                 query = (
@@ -304,15 +282,15 @@ async def _stream_agent_events(
                     if isinstance(tool_input, dict)
                     else str(tool_input)
                 )
-                last_active_step_title = "Searching knowledge base"
-                last_active_step_items = [
+                state.last_active_step_title = "Searching knowledge base"
+                state.last_active_step_items = [
                     f"Query: {query[:100]}{'...' if len(query) > 100 else ''}"
                 ]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
                     title="Searching knowledge base",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             elif tool_name == "link_preview":
                 url = (
@@ -320,15 +298,15 @@ async def _stream_agent_events(
                     if isinstance(tool_input, dict)
                     else str(tool_input)
                 )
-                last_active_step_title = "Fetching link preview"
-                last_active_step_items = [
+                state.last_active_step_title = "Fetching link preview"
+                state.last_active_step_items = [
                     f"URL: {url[:80]}{'...' if len(url) > 80 else ''}"
                 ]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
                     title="Fetching link preview",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             elif tool_name == "display_image":
                 src = (
@@ -339,15 +317,15 @@ async def _stream_agent_events(
                 title = (
                     tool_input.get("title", "") if isinstance(tool_input, dict) else ""
                 )
-                last_active_step_title = "Analyzing the image"
-                last_active_step_items = [
+                state.last_active_step_title = "Analyzing the image"
+                state.last_active_step_items = [
                     f"Analyzing: {title[:50] if title else src[:50]}{'...' if len(title or src) > 50 else ''}"
                 ]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
                     title="Analyzing the image",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             elif tool_name == "scrape_webpage":
                 url = (
@@ -355,15 +333,15 @@ async def _stream_agent_events(
                     if isinstance(tool_input, dict)
                     else str(tool_input)
                 )
-                last_active_step_title = "Scraping webpage"
-                last_active_step_items = [
+                state.last_active_step_title = "Scraping webpage"
+                state.last_active_step_items = [
                     f"URL: {url[:80]}{'...' if len(url) > 80 else ''}"
                 ]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
                     title="Scraping webpage",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             elif tool_name == "generate_podcast":
                 podcast_title = (
@@ -376,8 +354,8 @@ async def _stream_agent_events(
                     if isinstance(tool_input, dict)
                     else ""
                 )
-                last_active_step_title = "Generating podcast"
-                last_active_step_items = [
+                state.last_active_step_title = "Generating podcast"
+                state.last_active_step_items = [
                     f"Title: {podcast_title}",
                     f"Content: {content_len:,} characters",
                     "Preparing audio generation...",
@@ -386,7 +364,7 @@ async def _stream_agent_events(
                     step_id=tool_step_id,
                     title="Generating podcast",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             elif tool_name == "generate_report":
                 report_topic = (
@@ -404,8 +382,8 @@ async def _stream_agent_events(
                     if isinstance(tool_input, dict)
                     else ""
                 )
-                last_active_step_title = "Generating report"
-                last_active_step_items = [
+                state.last_active_step_title = "Generating report"
+                state.last_active_step_items = [
                     f"Topic: {report_topic}",
                     f"Style: {report_style}",
                     f"Source content: {content_len:,} characters",
@@ -415,14 +393,14 @@ async def _stream_agent_events(
                     step_id=tool_step_id,
                     title="Generating report",
                     status="in_progress",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
             else:
-                last_active_step_title = f"Using {tool_name.replace('_', ' ')}"
-                last_active_step_items = []
+                state.last_active_step_title = f"Using {tool_name.replace('_', ' ')}"
+                state.last_active_step_items = []
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title=last_active_step_title,
+                    title=state.last_active_step_title,
                     status="in_progress",
                 )
 
@@ -441,10 +419,8 @@ async def _stream_agent_events(
         elif event_type == "on_tool_end":
             tool_name, run_id, tool_output = extract_tool_output_from_end_event(event)
             tool_call_id = f"call_{run_id[:32]}" if run_id else "call_unknown"
-            original_step_id = tool_step_ids.get(
-                run_id, f"{step_prefix}-unknown-{run_id[:8]}"
-            )
-            completed_step_ids.add(original_step_id)
+            original_step_id = state.get_tool_step_id(run_id)
+            state.mark_step_completed(original_step_id)
 
             if tool_name == "search_knowledge_base":
                 result_info = "Search completed"
@@ -452,7 +428,7 @@ async def _stream_agent_events(
                     result_len = tool_output.get("result_length", 0)
                     if result_len > 0:
                         result_info = f"Found relevant information ({result_len} chars)"
-                completed_items = [*last_active_step_items, result_info]
+                completed_items = [*state.last_active_step_items, result_info]
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
                     title="Searching knowledge base",
@@ -466,17 +442,17 @@ async def _stream_agent_events(
                     has_error = "error" in tool_output
                     if has_error:
                         completed_items = [
-                            *last_active_step_items,
+                            *state.last_active_step_items,
                             f"Error: {tool_output.get('error', 'Failed to fetch')}",
                         ]
                     else:
                         completed_items = [
-                            *last_active_step_items,
+                            *state.last_active_step_items,
                             f"Title: {title[:60]}{'...' if len(title) > 60 else ''}",
                             f"Domain: {domain}" if domain else "Preview loaded",
                         ]
                 else:
-                    completed_items = [*last_active_step_items, "Preview loaded"]
+                    completed_items = [*state.last_active_step_items, "Preview loaded"]
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
                     title="Fetching link preview",
@@ -489,11 +465,11 @@ async def _stream_agent_events(
                     alt = tool_output.get("alt", "Image")
                     display_name = title or alt
                     completed_items = [
-                        *last_active_step_items,
+                        *state.last_active_step_items,
                         f"Analyzed: {display_name[:50]}{'...' if len(display_name) > 50 else ''}",
                     ]
                 else:
-                    completed_items = [*last_active_step_items, "Image analyzed"]
+                    completed_items = [*state.last_active_step_items, "Image analyzed"]
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
                     title="Analyzing the image",
@@ -507,17 +483,20 @@ async def _stream_agent_events(
                     has_error = "error" in tool_output
                     if has_error:
                         completed_items = [
-                            *last_active_step_items,
+                            *state.last_active_step_items,
                             f"Error: {tool_output.get('error', 'Failed to scrape')[:50]}",
                         ]
                     else:
                         completed_items = [
-                            *last_active_step_items,
+                            *state.last_active_step_items,
                             f"Title: {title[:50]}{'...' if len(title) > 50 else ''}",
                             f"Extracted: {word_count:,} words",
                         ]
                 else:
-                    completed_items = [*last_active_step_items, "Content extracted"]
+                    completed_items = [
+                        *state.last_active_step_items,
+                        "Content extracted",
+                    ]
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
                     title="Scraping webpage",
@@ -558,7 +537,7 @@ async def _stream_agent_events(
                         f"Error: {error_msg[:50]}",
                     ]
                 else:
-                    completed_items = last_active_step_items
+                    completed_items = state.last_active_step_items
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
                     title="Generating podcast",
@@ -599,7 +578,7 @@ async def _stream_agent_events(
                         f"Error: {error_msg[:50]}",
                     ]
                 else:
-                    completed_items = last_active_step_items
+                    completed_items = state.last_active_step_items
 
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
@@ -643,13 +622,10 @@ async def _stream_agent_events(
                     step_id=original_step_id,
                     title=f"Using {tool_name.replace('_', ' ')}",
                     status="completed",
-                    items=last_active_step_items,
+                    items=state.last_active_step_items,
                 )
 
-            just_finished_tool = True
-            last_active_step_id = None
-            last_active_step_title = ""
-            last_active_step_items = []
+            state.mark_tool_finished()
 
             if tool_name == "generate_podcast":
                 result = format_podcast_generation_output(tool_output)
@@ -729,24 +705,26 @@ async def _stream_agent_events(
                     )
 
         elif event_type in ("on_chain_end", "on_agent_end"):
-            if current_text_id is not None:
-                yield streaming_service.format_text_end(current_text_id)
-                current_text_id = None
+            if state.current_text_id is not None:
+                yield streaming_service.format_text_end(state.current_text_id)
+                state.end_text_block()
 
-    if current_text_id is not None:
-        yield streaming_service.format_text_end(current_text_id)
+    if state.current_text_id is not None:
+        yield streaming_service.format_text_end(state.current_text_id)
 
-    completion_event = complete_current_step()
+    completion_event = state.complete_current_step(streaming_service)
     if completion_event:
         yield completion_event
 
-    result.accumulated_text = accumulated_text
+    result.accumulated_text = state.accumulated_text
 
-    state = await agent.aget_state(config)
-    is_interrupted = state.tasks and any(task.interrupts for task in state.tasks)
+    agent_state = await agent.aget_state(config)
+    is_interrupted = agent_state.tasks and any(
+        task.interrupts for task in agent_state.tasks
+    )
     if is_interrupted:
         result.is_interrupted = True
-        result.interrupt_value = state.tasks[0].interrupts[0].value
+        result.interrupt_value = agent_state.tasks[0].interrupts[0].value
         yield streaming_service.format_interrupt_request(result.interrupt_value)
 
 
