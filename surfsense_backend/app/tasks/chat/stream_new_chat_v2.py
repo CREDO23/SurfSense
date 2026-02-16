@@ -46,6 +46,10 @@ from app.services.chat.streaming.tool_output_formatters import (
     format_scrape_webpage_output,
     format_search_knowledge_base_output,
 )
+from app.services.chat.streaming.tool_thinking_steps import (
+    build_search_knowledge_base_end_step,
+    build_search_knowledge_base_start_step,
+)
 from app.services.chat_session_state_service import (
     clear_ai_responding,
     set_ai_responding,
@@ -277,20 +281,14 @@ async def _stream_agent_events(
             state.last_active_step_id = tool_step_id
 
             if tool_name == "search_knowledge_base":
-                query = (
-                    tool_input.get("query", "")
-                    if isinstance(tool_input, dict)
-                    else str(tool_input)
-                )
-                state.last_active_step_title = "Searching knowledge base"
-                state.last_active_step_items = [
-                    f"Query: {query[:100]}{'...' if len(query) > 100 else ''}"
-                ]
+                step_config = build_search_knowledge_base_start_step(tool_input)
+                state.last_active_step_title = step_config["title"]
+                state.last_active_step_items = step_config["items"]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title="Searching knowledge base",
+                    title=step_config["title"],
                     status="in_progress",
-                    items=state.last_active_step_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "link_preview":
                 url = (
@@ -423,17 +421,14 @@ async def _stream_agent_events(
             state.mark_step_completed(original_step_id)
 
             if tool_name == "search_knowledge_base":
-                result_info = "Search completed"
-                if isinstance(tool_output, dict):
-                    result_len = tool_output.get("result_length", 0)
-                    if result_len > 0:
-                        result_info = f"Found relevant information ({result_len} chars)"
-                completed_items = [*state.last_active_step_items, result_info]
+                step_config = build_search_knowledge_base_end_step(
+                    tool_output, state.last_active_step_items
+                )
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Searching knowledge base",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "link_preview":
                 if isinstance(tool_output, dict):
