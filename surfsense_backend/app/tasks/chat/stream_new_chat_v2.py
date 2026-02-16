@@ -49,6 +49,8 @@ from app.services.chat.streaming.tool_output_formatters import (
 from app.services.chat.streaming.tool_thinking_steps import (
     build_display_image_end_step,
     build_display_image_start_step,
+    build_generate_podcast_end_step,
+    build_generate_podcast_start_step,
     build_link_preview_end_step,
     build_link_preview_start_step,
     build_scrape_webpage_end_step,
@@ -327,27 +329,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "generate_podcast":
-                podcast_title = (
-                    tool_input.get("podcast_title", "SurfSense Podcast")
-                    if isinstance(tool_input, dict)
-                    else "SurfSense Podcast"
-                )
-                content_len = len(
-                    tool_input.get("source_content", "")
-                    if isinstance(tool_input, dict)
-                    else ""
-                )
-                state.last_active_step_title = "Generating podcast"
-                state.last_active_step_items = [
-                    f"Title: {podcast_title}",
-                    f"Content: {content_len:,} characters",
-                    "Preparing audio generation...",
-                ]
+                step_config = build_generate_podcast_start_step(tool_input)
+                state.last_active_step_title = step_config["title"]
+                state.last_active_step_items = step_config["items"]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title="Generating podcast",
+                    title=step_config["title"],
                     status="in_progress",
-                    items=state.last_active_step_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "generate_report":
                 report_topic = (
@@ -446,45 +435,14 @@ async def _stream_agent_events(
                     items=step_config["items"],
                 )
             elif tool_name == "generate_podcast":
-                podcast_status = (
-                    tool_output.get("status", "unknown")
-                    if isinstance(tool_output, dict)
-                    else "unknown"
+                step_config = build_generate_podcast_end_step(
+                    tool_output, state.last_active_step_items
                 )
-                podcast_title = (
-                    tool_output.get("title", "Podcast")
-                    if isinstance(tool_output, dict)
-                    else "Podcast"
-                )
-                if podcast_status == "processing":
-                    completed_items = [
-                        f"Title: {podcast_title}",
-                        "Audio generation started",
-                        "Processing in background...",
-                    ]
-                elif podcast_status == "already_generating":
-                    completed_items = [
-                        f"Title: {podcast_title}",
-                        "Podcast already in progress",
-                        "Please wait for it to complete",
-                    ]
-                elif podcast_status == "error":
-                    error_msg = (
-                        tool_output.get("error", "Unknown error")
-                        if isinstance(tool_output, dict)
-                        else "Unknown error"
-                    )
-                    completed_items = [
-                        f"Title: {podcast_title}",
-                        f"Error: {error_msg[:50]}",
-                    ]
-                else:
-                    completed_items = state.last_active_step_items
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Generating podcast",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "generate_report":
                 report_status = (
