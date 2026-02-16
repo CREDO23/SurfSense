@@ -30,6 +30,16 @@ from app.agents.new_chat.llm_config import (
 )
 from app.db import ChatVisibility, Document, SurfsenseDocsDocument
 from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
+from app.services.chat.streaming.tool_handlers import (
+    format_display_image_output,
+    format_generic_tool_output,
+    format_link_preview_output,
+    format_notion_tool_output,
+    format_podcast_generation_output,
+    format_report_generation_output,
+    format_scrape_webpage_output,
+    format_search_knowledge_base_output,
+)
 from app.services.chat_session_state_service import (
     clear_ai_responding,
     set_ai_responding,
@@ -660,157 +670,81 @@ async def _stream_agent_events(
             last_active_step_items = []
 
             if tool_name == "generate_podcast":
+                result = format_podcast_generation_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    tool_output
-                    if isinstance(tool_output, dict)
-                    else {"result": tool_output},
+                    tool_call_id, result["output"]
                 )
-                if (
-                    isinstance(tool_output, dict)
-                    and tool_output.get("status") == "success"
-                ):
+                if result["terminal_message"]:
                     yield streaming_service.format_terminal_info(
-                        f"Podcast generated successfully: {tool_output.get('title', 'Podcast')}",
-                        "success",
-                    )
-                else:
-                    error_msg = (
-                        tool_output.get("error", "Unknown error")
-                        if isinstance(tool_output, dict)
-                        else "Unknown error"
-                    )
-                    yield streaming_service.format_terminal_info(
-                        f"Podcast generation failed: {error_msg}",
-                        "error",
+                        result["terminal_message"], result["terminal_status"]
                     )
             elif tool_name == "link_preview":
+                result = format_link_preview_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    tool_output
-                    if isinstance(tool_output, dict)
-                    else {"result": tool_output},
+                    tool_call_id, result["output"]
                 )
-                if isinstance(tool_output, dict) and "error" not in tool_output:
-                    title = tool_output.get("title", "Link")
+                if result["terminal_message"]:
                     yield streaming_service.format_terminal_info(
-                        f"Link preview loaded: {title[:50]}{'...' if len(title) > 50 else ''}",
-                        "success",
-                    )
-                else:
-                    error_msg = (
-                        tool_output.get("error", "Failed to fetch")
-                        if isinstance(tool_output, dict)
-                        else "Failed to fetch"
-                    )
-                    yield streaming_service.format_terminal_info(
-                        f"Link preview failed: {error_msg}",
-                        "error",
+                        result["terminal_message"], result["terminal_status"]
                     )
             elif tool_name == "display_image":
+                result = format_display_image_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    tool_output
-                    if isinstance(tool_output, dict)
-                    else {"result": tool_output},
+                    tool_call_id, result["output"]
                 )
-                if isinstance(tool_output, dict):
-                    title = tool_output.get("title") or tool_output.get("alt", "Image")
+                if result["terminal_message"]:
                     yield streaming_service.format_terminal_info(
-                        f"Image analyzed: {title[:40]}{'...' if len(title) > 40 else ''}",
-                        "success",
+                        result["terminal_message"], result["terminal_status"]
                     )
             elif tool_name == "scrape_webpage":
-                if isinstance(tool_output, dict):
-                    display_output = {
-                        k: v for k, v in tool_output.items() if k != "content"
-                    }
-                    if "content" in tool_output:
-                        content = tool_output.get("content", "")
-                        display_output["content_preview"] = (
-                            content[:500] + "..." if len(content) > 500 else content
-                        )
-                    yield streaming_service.format_tool_output_available(
-                        tool_call_id,
-                        display_output,
-                    )
-                else:
-                    yield streaming_service.format_tool_output_available(
-                        tool_call_id,
-                        {"result": tool_output},
-                    )
-                if isinstance(tool_output, dict) and "error" not in tool_output:
-                    title = tool_output.get("title", "Webpage")
-                    word_count = tool_output.get("word_count", 0)
+                result = format_scrape_webpage_output(tool_output)
+                yield streaming_service.format_tool_output_available(
+                    tool_call_id, result["output"]
+                )
+                if result["terminal_message"]:
                     yield streaming_service.format_terminal_info(
-                        f"Scraped: {title[:40]}{'...' if len(title) > 40 else ''} ({word_count:,} words)",
-                        "success",
-                    )
-                else:
-                    error_msg = (
-                        tool_output.get("error", "Failed to scrape")
-                        if isinstance(tool_output, dict)
-                        else "Failed to scrape"
-                    )
-                    yield streaming_service.format_terminal_info(
-                        f"Scrape failed: {error_msg}",
-                        "error",
+                        result["terminal_message"], result["terminal_status"]
                     )
             elif tool_name == "search_knowledge_base":
+                result = format_search_knowledge_base_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    {"status": "completed", "result_length": len(str(tool_output))},
+                    tool_call_id, result["output"]
                 )
-                yield streaming_service.format_terminal_info(
-                    "Knowledge base search completed", "success"
-                )
+                if result["terminal_message"]:
+                    yield streaming_service.format_terminal_info(
+                        result["terminal_message"], result["terminal_status"]
+                    )
             elif tool_name == "generate_report":
-                # Stream the full report result so frontend can render the ReportCard
+                result = format_report_generation_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    tool_output
-                    if isinstance(tool_output, dict)
-                    else {"result": tool_output},
+                    tool_call_id, result["output"]
                 )
-                # Send appropriate terminal message based on status
-                if (
-                    isinstance(tool_output, dict)
-                    and tool_output.get("status") == "ready"
-                ):
-                    word_count = tool_output.get("word_count", 0)
+                if result["terminal_message"]:
                     yield streaming_service.format_terminal_info(
-                        f"Report generated: {tool_output.get('title', 'Report')} ({word_count:,} words)",
-                        "success",
-                    )
-                else:
-                    error_msg = (
-                        tool_output.get("error", "Unknown error")
-                        if isinstance(tool_output, dict)
-                        else "Unknown error"
-                    )
-                    yield streaming_service.format_terminal_info(
-                        f"Report generation failed: {error_msg}",
-                        "error",
+                        result["terminal_message"], result["terminal_status"]
                     )
             elif tool_name in (
                 "create_notion_page",
                 "update_notion_page",
                 "delete_notion_page",
             ):
+                result = format_notion_tool_output(tool_output)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    tool_output
-                    if isinstance(tool_output, dict)
-                    else {"result": tool_output},
+                    tool_call_id, result["output"]
                 )
+                if result["terminal_message"]:
+                    yield streaming_service.format_terminal_info(
+                        result["terminal_message"], result["terminal_status"]
+                    )
             else:
+                result = format_generic_tool_output(tool_output, tool_name)
                 yield streaming_service.format_tool_output_available(
-                    tool_call_id,
-                    {"status": "completed", "result_length": len(str(tool_output))},
+                    tool_call_id, result["output"]
                 )
-                yield streaming_service.format_terminal_info(
-                    f"Tool {tool_name} completed", "success"
-                )
+                if result["terminal_message"]:
+                    yield streaming_service.format_terminal_info(
+                        result["terminal_message"], result["terminal_status"]
+                    )
 
         elif event_type in ("on_chain_end", "on_agent_end"):
             if current_text_id is not None:
