@@ -47,6 +47,8 @@ from app.services.chat.streaming.tool_output_formatters import (
     format_search_knowledge_base_output,
 )
 from app.services.chat.streaming.tool_thinking_steps import (
+    build_display_image_end_step,
+    build_display_image_start_step,
     build_scrape_webpage_end_step,
     build_scrape_webpage_start_step,
     build_search_knowledge_base_end_step,
@@ -309,23 +311,14 @@ async def _stream_agent_events(
                     items=state.last_active_step_items,
                 )
             elif tool_name == "display_image":
-                src = (
-                    tool_input.get("src", "")
-                    if isinstance(tool_input, dict)
-                    else str(tool_input)
-                )
-                title = (
-                    tool_input.get("title", "") if isinstance(tool_input, dict) else ""
-                )
-                state.last_active_step_title = "Analyzing the image"
-                state.last_active_step_items = [
-                    f"Analyzing: {title[:50] if title else src[:50]}{'...' if len(title or src) > 50 else ''}"
-                ]
+                step_config = build_display_image_start_step(tool_input)
+                state.last_active_step_title = step_config["title"]
+                state.last_active_step_items = step_config["items"]
                 yield streaming_service.format_thinking_step(
                     step_id=tool_step_id,
-                    title="Analyzing the image",
+                    title=step_config["title"],
                     status="in_progress",
-                    items=state.last_active_step_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "scrape_webpage":
                 step_config = build_scrape_webpage_start_step(tool_input)
@@ -451,21 +444,14 @@ async def _stream_agent_events(
                     items=completed_items,
                 )
             elif tool_name == "display_image":
-                if isinstance(tool_output, dict):
-                    title = tool_output.get("title", "")
-                    alt = tool_output.get("alt", "Image")
-                    display_name = title or alt
-                    completed_items = [
-                        *state.last_active_step_items,
-                        f"Analyzed: {display_name[:50]}{'...' if len(display_name) > 50 else ''}",
-                    ]
-                else:
-                    completed_items = [*state.last_active_step_items, "Image analyzed"]
+                step_config = build_display_image_end_step(
+                    tool_output, state.last_active_step_items
+                )
                 yield streaming_service.format_thinking_step(
                     step_id=original_step_id,
-                    title="Analyzing the image",
+                    title=step_config["title"],
                     status="completed",
-                    items=completed_items,
+                    items=step_config["items"],
                 )
             elif tool_name == "scrape_webpage":
                 step_config = build_scrape_webpage_end_step(
