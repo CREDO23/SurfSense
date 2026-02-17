@@ -15,10 +15,8 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.db import ChatVisibility
-from app.prompts import TITLE_GENERATION_PROMPT_TEMPLATE
 from app.services.chat.streaming.agent_builder import build_agent
 from app.services.chat.streaming.context_builder import build_agent_context
 from app.services.chat.streaming.event_extractors import (
@@ -28,6 +26,7 @@ from app.services.chat.streaming.event_extractors import (
 )
 from app.services.chat.streaming.llm_config_loader import load_llm_config
 from app.services.chat.streaming.stream_state import StreamState
+from app.services.chat.streaming.title_generator import generate_and_update_title
 from app.services.chat.streaming.tool_event_handler import (
     yield_thinking_step_end,
     yield_thinking_step_start,
@@ -354,61 +353,16 @@ async def stream_new_chat(
 
         accumulated_text = stream_result.accumulated_text
 
-        # Generate LLM title for new chats after first response
-        # Check if this is the first assistant response by counting existing assistant messages
-        from sqlalchemy import func
-
-        from app.db import NewChatMessage, NewChatThread
-
-        assistant_count_result = await session.execute(
-            select(func.count(NewChatMessage.id)).filter(
-                NewChatMessage.thread_id == chat_id,
-                NewChatMessage.role == "assistant",
-            )
-        )
-        assistant_message_count = assistant_count_result.scalar() or 0
-
-        # Only generate title on the first response (no prior assistant messages)
-        if assistant_message_count == 0:
-            generated_title = None
-            try:
-                # Generate title using the same LLM
-                title_chain = TITLE_GENERATION_PROMPT_TEMPLATE | llm
-                # Truncate inputs to avoid context length issues
-                truncated_query = user_query[:500]
-                truncated_response = accumulated_text[:1000]
-                title_result = await title_chain.ainvoke(
-                    {
-                        "user_query": truncated_query,
-                        "assistant_response": truncated_response,
-                    }
-                )
-
-                # Extract and clean the title
-                if title_result and hasattr(title_result, "content"):
-                    raw_title = title_result.content.strip()
-                    # Validate the title (reasonable length)
-                    if raw_title and len(raw_title) <= 100:
-                        # Remove any quotes or extra formatting
-                        generated_title = raw_title.strip("\"'")
-            except Exception:
-                generated_title = None
-
-            # Only update if LLM succeeded (keep truncated prompt title as fallback)
-            if generated_title:
-                # Fetch thread and update title
-                thread_result = await session.execute(
-                    select(NewChatThread).filter(NewChatThread.id == chat_id)
-                )
-                thread = thread_result.scalars().first()
-                if thread:
-                    thread.title = generated_title
-                    await session.commit()
-
-                    # Notify frontend of the title update
-                    yield streaming_service.format_thread_title_update(
-                        chat_id, generated_title
-                    )
+        # Generate and update title for new chats
+        async for sse in generate_and_update_title(
+            llm=llm,
+            user_query=user_query,
+            accumulated_text=accumulated_text,
+            chat_id=chat_id,
+            session=session,
+            streaming_service=streaming_service,
+        ):
+            yield sse
 
         # Finish the step and message
         yield streaming_service.format_finish_step()
