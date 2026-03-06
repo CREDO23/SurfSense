@@ -5,16 +5,16 @@ export const StatItem = z.object({
   category: z.literal("stat"),
   title: z.string(),
   value: z.string(),
-  desc: z.string().optional(),
+  desc: z.string().nullish(),
   color: z.string(),
 });
 
 export const InfoItem = z.object({
   category: z.literal("info"),
   title: z.string(),
-  subtitle: z.string().optional(),
+  subtitle: z.string().nullish(),
   desc: z.string(),
-  tag: z.string().optional(),
+  tag: z.string().nullish(),
   color: z.string(),
 });
 
@@ -22,7 +22,7 @@ export const QuoteItem = z.object({
   category: z.literal("quote"),
   quote: z.string(),
   author: z.string(),
-  role: z.string().optional(),
+  role: z.string().nullish(),
   color: z.string(),
 });
 
@@ -30,8 +30,8 @@ export const ProfileItem = z.object({
   category: z.literal("profile"),
   name: z.string(),
   role: z.string(),
-  desc: z.string().optional(),
-  tag: z.string().optional(),
+  desc: z.string().nullish(),
+  tag: z.string().nullish(),
   color: z.string(),
 });
 
@@ -39,15 +39,15 @@ export const ProgressItem = z.object({
   category: z.literal("progress"),
   title: z.string(),
   value: z.number(),
-  max: z.number().optional(),
-  desc: z.string().optional(),
+  max: z.number().nullish(),
+  desc: z.string().nullish(),
   color: z.string(),
 });
 
 export const FactItem = z.object({
   category: z.literal("fact"),
   statement: z.string(),
-  source: z.string().optional(),
+  source: z.string().nullish(),
   color: z.string(),
 });
 
@@ -55,7 +55,7 @@ export const DefinitionItem = z.object({
   category: z.literal("definition"),
   term: z.string(),
   definition: z.string(),
-  example: z.string().optional(),
+  example: z.string().nullish(),
   color: z.string(),
 });
 

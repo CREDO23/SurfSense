@@ -61,7 +61,7 @@ export const ListScene: React.FC<ListSceneProps> = ({
   const vmin = Math.min(width, height) / 100;
   const frame = useCurrentFrame();
 
-  const showBadge = variant.showIndex || input.items.some((it) => it.value !== undefined);
+  const showBadge = variant.showIndex || input.items.some((it) => it.value != null);
 
   const { items, waypoints } = useMemo(() => {
     const p = getLayoutParams(vmin);

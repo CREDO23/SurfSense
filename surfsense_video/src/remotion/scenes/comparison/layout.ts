@@ -4,7 +4,7 @@
  */
 import type { ComparisonSceneInput, Waypoint } from "./types";
 import type { ComparisonLayout } from "./variant";
-import { getMaxItemHeight } from "./components/itemSize";
+import { getMaxItemHeight, computeColumnWidth, getMaxHeaderHeight } from "./components/itemSize";
 import {
   ITEM_STAGGER,
   ITEM_FADE_DURATION,
@@ -50,23 +50,28 @@ export interface ComparisonLayoutResult {
 function layoutBinary(
   input: ComparisonSceneInput,
   vmin: number,
+  viewW: number,
 ): ComparisonLayoutResult {
   const left = input.groups[0];
   const right = input.groups[1];
   const leftItems = left.items;
   const rightItems = right.items;
 
-  const colW = vmin * 32;
-  const rowGap = vmin * 3;
-  const headerH = vmin * 7;
   const dividerW = vmin * 10;
   const gap = vmin * 3;
+  const rowGap = vmin * 3;
+  const headerGap = vmin * 4;
+
+  const maxColW = (viewW * 0.88 - dividerW - 2 * gap) / 2;
+  const colW = Math.min(computeColumnWidth(input.groups, vmin, viewW), maxColW);
+  const headerH = getMaxHeaderHeight(input.groups, vmin, colW);
 
   const allItems = [...leftItems, ...rightItems];
   const rowH = getMaxItemHeight(allItems, vmin, colW);
 
   const maxRows = Math.max(leftItems.length, rightItems.length);
-  const contentH = headerH + maxRows * (rowH + rowGap) - rowGap;
+  const itemsTop = headerH + headerGap;
+  const contentH = itemsTop + maxRows * (rowH + rowGap) - rowGap;
   const contentW = colW + gap + dividerW + gap + colW;
 
   const leftX = 0;
@@ -83,7 +88,7 @@ function layoutBinary(
       groupIdx: 0,
       itemIdx: i,
       x: leftX,
-      y: headerH + i * (rowH + rowGap),
+      y: itemsTop + i * (rowH + rowGap),
       w: colW,
       h: rowH,
     });
@@ -94,7 +99,7 @@ function layoutBinary(
       groupIdx: 1,
       itemIdx: i,
       x: rightX,
-      y: headerH + i * (rowH + rowGap),
+      y: itemsTop + i * (rowH + rowGap),
       w: colW,
       h: rowH,
     });
@@ -117,19 +122,23 @@ function layoutBinary(
 function layoutTable(
   input: ComparisonSceneInput,
   vmin: number,
+  viewW: number,
 ): ComparisonLayoutResult {
   const groups = input.groups;
-  const colW = vmin * 28;
   const colGap = vmin * 3;
   const rowGap = vmin * 3;
-  const headerH = vmin * 7;
+  const headerGap = vmin * 4;
+
+  const colW = computeColumnWidth(groups, vmin, viewW);
+  const headerH = getMaxHeaderHeight(groups, vmin, colW);
 
   const allItems = groups.flatMap((g) => g.items);
   const rowH = getMaxItemHeight(allItems, vmin, colW);
 
   const maxRows = Math.max(...groups.map((g) => g.items.length));
+  const itemsTop = headerH + headerGap;
   const contentW = groups.length * colW + (groups.length - 1) * colGap;
-  const contentH = headerH + maxRows * (rowH + rowGap) - rowGap;
+  const contentH = itemsTop + maxRows * (rowH + rowGap) - rowGap;
 
   const items: LayoutItem[] = [];
   const headers: LayoutHeader[] = [];
@@ -143,7 +152,7 @@ function layoutTable(
         groupIdx: gi,
         itemIdx: ii,
         x: colX,
-        y: headerH + ii * (rowH + rowGap),
+        y: itemsTop + ii * (rowH + rowGap),
         w: colW,
         h: rowH,
       });
@@ -204,12 +213,13 @@ export function computeComparisonLayout(
   input: ComparisonSceneInput,
   layout: ComparisonLayout,
   vmin: number,
+  viewW: number,
 ): ComparisonLayoutResult {
   switch (layout) {
     case "binary":
-      return layoutBinary(input, vmin);
+      return layoutBinary(input, vmin, viewW);
     case "table":
-      return layoutTable(input, vmin);
+      return layoutTable(input, vmin, viewW);
   }
 }
 
@@ -227,7 +237,7 @@ export function comparisonSceneDuration(
 ): number {
   const vmin = Math.min(viewW, viewH) / 100;
   const titleOffset = input.title ? vmin * 12 : 0;
-  const result = computeComparisonLayout(input, layout, vmin);
+  const result = computeComparisonLayout(input, layout, vmin, viewW);
   const wps = buildWaypoints(result.contentW, result.contentH, viewW, viewH, titleOffset);
   const totalItems = input.groups.reduce((s, g) => s + g.items.length, 0);
   const animPhase =

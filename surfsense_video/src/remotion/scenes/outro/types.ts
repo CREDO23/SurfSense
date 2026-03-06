@@ -3,8 +3,8 @@ import { z } from "zod";
 
 export const OutroSceneInput = z.object({
   type: z.literal("outro"),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string().nullish(),
+  subtitle: z.string().nullish(),
 });
 
 export type OutroSceneInput = z.infer<typeof OutroSceneInput>;

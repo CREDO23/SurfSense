@@ -7,9 +7,45 @@ expressed in descriptions (not Field validators) for provider compatibility.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, Union
+import copy
+from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+# ─── OpenAI strict-mode schema helper ────────────────────────────────────────
+
+
+def _make_strict(node: dict[str, Any]) -> None:
+    """Recursively mutate a JSON-schema node so it satisfies OpenAI strict mode."""
+    if not isinstance(node, dict):
+        return
+    if "properties" in node:
+        node["required"] = sorted(node["properties"])
+        node["additionalProperties"] = False
+        for prop in node["properties"].values():
+            prop.pop("default", None)
+            _make_strict(prop)
+    if "items" in node and isinstance(node["items"], dict):
+        _make_strict(node["items"])
+    for key in ("anyOf", "allOf", "oneOf"):
+        for sub in node.get(key, []):
+            _make_strict(sub)
+
+
+def openai_strict_schema(model: type[BaseModel]) -> dict[str, Any]:
+    """Return a JSON schema for *model* that passes OpenAI's strict validation.
+
+    Works by post-processing the Pydantic-generated schema:
+    - every object gets ``required = [all properties]`` and ``additionalProperties = false``
+    - ``default`` values are stripped
+    - ``$defs`` entries are processed recursively
+    """
+    schema = copy.deepcopy(model.model_json_schema())
+    _make_strict(schema)
+    for defn in schema.get("$defs", {}).values():
+        _make_strict(defn)
+    return schema
 
 
 # ─── Intro ───────────────────────────────────────────────────────────────────
@@ -100,17 +136,14 @@ class DefinitionItem(BaseModel):
     color: str = Field(description="Hex accent color.")
 
 
-CardItem = Annotated[
-    Union[
-        StatItem,
-        InfoItem,
-        QuoteItem,
-        ProfileItem,
-        ProgressItem,
-        FactItem,
-        DefinitionItem,
-    ],
-    Field(discriminator="category"),
+CardItem = Union[
+    StatItem,
+    InfoItem,
+    QuoteItem,
+    ProfileItem,
+    ProgressItem,
+    FactItem,
+    DefinitionItem,
 ]
 
 
@@ -300,19 +333,16 @@ class OutroSceneInput(BaseModel):
 
 # ─── Top-level (discriminated on "type") ─────────────────────────────────────
 
-SceneInput = Annotated[
-    Union[
-        IntroSceneInput,
-        SpotlightSceneInput,
-        HierarchySceneInput,
-        ListSceneInput,
-        SequenceSceneInput,
-        ChartSceneInput,
-        RelationSceneInput,
-        ComparisonSceneInput,
-        OutroSceneInput,
-    ],
-    Field(discriminator="type"),
+SceneInput = Union[
+    IntroSceneInput,
+    SpotlightSceneInput,
+    HierarchySceneInput,
+    ListSceneInput,
+    SequenceSceneInput,
+    ChartSceneInput,
+    RelationSceneInput,
+    ComparisonSceneInput,
+    OutroSceneInput,
 ]
 
 

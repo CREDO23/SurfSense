@@ -3,14 +3,14 @@ import { z } from "zod";
 
 export const CompareItemSchema = z.object({
   label: z.string(),
-  desc: z.string().optional(),
+  desc: z.string().nullish(),
 });
 
 export type CompareItem = z.infer<typeof CompareItemSchema>;
 
 export const CompareGroupSchema = z.object({
   label: z.string(),
-  color: z.string().optional(),
+  color: z.string().nullish(),
   items: z.array(CompareItemSchema).min(1),
 });
 
@@ -18,8 +18,8 @@ export type CompareGroup = z.infer<typeof CompareGroupSchema>;
 
 export const ComparisonSceneInput = z.object({
   type: z.literal("comparison"),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string().nullish(),
+  subtitle: z.string().nullish(),
   groups: z.array(CompareGroupSchema).min(2),
 });
 

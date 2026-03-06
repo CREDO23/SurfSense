@@ -1,4 +1,4 @@
-import { VideoIcon } from "lucide-react";
+import { AlertCircleIcon, VideoIcon } from "lucide-react";
 
 interface VideoErrorStateProps {
 	title: string;
@@ -7,16 +7,19 @@ interface VideoErrorStateProps {
 
 export function VideoErrorState({ title, error }: VideoErrorStateProps) {
 	return (
-		<div className="my-4 overflow-hidden rounded-xl border bg-card">
-			<div className="flex items-center gap-2 sm:gap-3 bg-muted/30 px-4 py-5 sm:px-6 sm:py-6">
-				<div className="flex size-8 sm:size-12 shrink-0 items-center justify-center rounded-lg bg-muted/60">
-					<VideoIcon className="size-4 sm:size-6 text-muted-foreground" />
+		<div className="my-4 overflow-hidden rounded-xl border border-destructive/20 bg-card">
+			<div className="flex items-center gap-3 sm:gap-4 px-4 py-4 sm:px-5 sm:py-5">
+				<div className="flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
+					<AlertCircleIcon className="size-4 sm:size-5 text-destructive" />
 				</div>
 				<div className="min-w-0 flex-1">
-					<h3 className="font-semibold text-muted-foreground text-sm sm:text-base leading-tight line-clamp-2">
-						{title}
-					</h3>
-					<p className="text-muted-foreground/60 text-[11px] sm:text-xs mt-0.5 line-clamp-2">
+					<div className="flex items-center gap-1.5 mb-0.5">
+						<VideoIcon className="size-3 sm:size-3.5 text-muted-foreground shrink-0" />
+						<h3 className="font-medium text-muted-foreground text-xs sm:text-sm leading-tight truncate">
+							{title}
+						</h3>
+					</div>
+					<p className="text-destructive/80 text-xs sm:text-sm leading-snug">
 						{error}
 					</p>
 				</div>

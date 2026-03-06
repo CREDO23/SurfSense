@@ -7,7 +7,7 @@ import {
   VIDEO_WIDTH,
 } from "../types/constants";
 import { Video, videoDuration } from "./Video";
-import { DEMO_VIDEO } from "./demo";
+import { DEMO_VIDEO, DEMO_VIDEO_INPUT, DEMO_VIDEO_INPUT_J } from "./demo";
 import { introPreviews } from "./scenes/intro/preview";
 import { spotlightPreviews } from "./scenes/spotlight/preview";
 import { hierarchyPreviews } from "./scenes/hierarchy/preview";
@@ -31,7 +31,7 @@ export const RemotionRoot: React.FC = () => {
           width: VIDEO_WIDTH,
           height: VIDEO_HEIGHT,
         })}
-        defaultProps={DEMO_VIDEO}
+        defaultProps={DEMO_VIDEO_INPUT_J}
       />
 
       {/* Individual scene previews */}

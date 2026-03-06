@@ -3,16 +3,16 @@ import { z } from "zod";
 
 export const SequenceItemSchema = z.object({
   label: z.string(),
-  desc: z.string().optional(),
-  color: z.string().optional(),
+  desc: z.string().nullish(),
+  color: z.string().nullish(),
 });
 
 export type SequenceItem = z.infer<typeof SequenceItemSchema>;
 
 export const SequenceSceneInput = z.object({
   type: z.literal("sequence"),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string().nullish(),
+  subtitle: z.string().nullish(),
   items: z.array(SequenceItemSchema).min(1),
 });
 

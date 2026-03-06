@@ -116,7 +116,7 @@ function resolveScene(
       };
     }
     case "comparison": {
-      const variant = deriveComparisonVariant(seed);
+      const variant = deriveComparisonVariant(seed, scene.groups.length);
       const duration = comparisonSceneDuration(scene, variant.layout, width, height);
       return {
         scene, duration,

@@ -3,23 +3,23 @@ import { z } from "zod";
 
 export interface HierarchyNode {
   label: string;
-  color?: string;
-  desc?: string;
-  children?: HierarchyNode[];
+  color?: string | null;
+  desc?: string | null;
+  children?: HierarchyNode[] | null;
 }
 
 const HierarchyNodeSchema: z.ZodType<HierarchyNode> = z.object({
   label: z.string(),
-  color: z.string().optional(),
-  desc: z.string().optional(),
-  children: z.lazy(() => z.array(HierarchyNodeSchema)).optional(),
+  color: z.string().nullish(),
+  desc: z.string().nullish(),
+  children: z.lazy(() => z.array(HierarchyNodeSchema)).nullish(),
 });
 
 export { HierarchyNodeSchema };
 
 export const HierarchySceneInput = z.object({
   type: z.literal("hierarchy"),
-  title: z.string().optional(),
+  title: z.string().nullish(),
   items: z.array(HierarchyNodeSchema).min(1),
 });
 

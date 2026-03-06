@@ -238,3 +238,667 @@ export const DEMO_VIDEO: VideoInput = {
     { type: "outro", title: "Thank You", subtitle: "Generated with SurfSense" },
   ],
 };
+
+
+export const DEMO_VIDEO_INPUT: VideoInput = {
+  "scenes": [
+    {
+      "type": "intro",
+      "title": "SurfSense Strategy Summary",
+      "subtitle": "Product, Market & Growth Blueprint"
+    },
+    {
+      "type": "list",
+      "title": "Conversation Goals",
+      "subtitle": "What this strategy covers",
+      "items": [
+        {
+          "label": "Understand SurfSense",
+          "desc": "What it is and how it works.",
+          "value": null,
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Analyze Market Position",
+          "desc": "Competitors and differentiation.",
+          "value": null,
+          "color": "#10b981"
+        },
+        {
+          "label": "Explore Growth Strategy",
+          "desc": "How to stand out.",
+          "value": null,
+          "color": "#f59e0b"
+        }
+      ]
+    },
+    {
+      "type": "spotlight",
+      "items": [
+        {
+          "category": "definition",
+          "term": "SurfSense",
+          "definition": "AI-powered knowledge assistant for your own data.",
+          "example": "Query documents, notes, and internal sources.",
+          "color": "#6366f1"
+        },
+        {
+          "category": "definition",
+          "term": "RAG Architecture",
+          "definition": "Retrieval + grounded LLM answers.",
+          "example": "Context first, generation second.",
+          "color": "#8b5cf6"
+        },
+        {
+          "category": "definition",
+          "term": "Search Spaces",
+          "definition": "Organized knowledge environments.",
+          "example": "Segmented by team or project.",
+          "color": "#06b6d4"
+        }
+      ]
+    },
+    {
+      "type": "sequence",
+      "title": "How It Works",
+      "subtitle": "End-to-end pipeline",
+      "items": [
+        {
+          "label": "Ingestion",
+          "desc": "Documents, webpages, connectors.",
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Processing",
+          "desc": "Parse → Chunk → Embed.",
+          "color": "#10b981"
+        },
+        {
+          "label": "Storage",
+          "desc": "PostgreSQL + pgvector.",
+          "color": "#f59e0b"
+        },
+        {
+          "label": "Retrieval",
+          "desc": "Similarity search for context.",
+          "color": "#ef4444"
+        },
+        {
+          "label": "Generation",
+          "desc": "LLM produces grounded answers.",
+          "color": "#8b5cf6"
+        }
+      ]
+    },
+    {
+      "type": "hierarchy",
+      "title": "Infrastructure Stack",
+      "items": [
+        {
+          "label": "Backend",
+          "color": "#3b82f6",
+          "desc": "API and orchestration layer.",
+          "children": [
+            {
+              "label": "FastAPI",
+              "color": "#60a5fa",
+              "desc": "High-performance Python API.",
+              "children": null
+            },
+            {
+              "label": "Celery Workers",
+              "color": "#34d399",
+              "desc": "Async task processing.",
+              "children": null
+            },
+            {
+              "label": "Redis",
+              "color": "#f87171",
+              "desc": "Queue and caching.",
+              "children": null
+            }
+          ]
+        },
+        {
+          "label": "Data Layer",
+          "color": "#10b981",
+          "desc": "Storage and vectors.",
+          "children": [
+            {
+              "label": "PostgreSQL",
+              "color": "#059669",
+              "desc": "Primary database.",
+              "children": null
+            },
+            {
+              "label": "pgvector",
+              "color": "#0ea5e9",
+              "desc": "Vector similarity search.",
+              "children": null
+            }
+          ]
+        },
+        {
+          "label": "Deployment",
+          "color": "#f59e0b",
+          "desc": "Containerized setup.",
+          "children": [
+            {
+              "label": "Docker",
+              "color": "#fbbf24",
+              "desc": "Portable environments.",
+              "children": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "relation",
+      "title": "Competitive Landscape",
+      "subtitle": "Three surrounding forces",
+      "nodes": [
+        {
+          "id": "surf",
+          "label": "SurfSense",
+          "desc": "AI knowledge assistant",
+          "color": "#6366f1"
+        },
+        {
+          "id": "oss",
+          "label": "Open-Source RAG",
+          "desc": "AnythingLLM, Danswer, Haystack",
+          "color": "#10b981"
+        },
+        {
+          "id": "ent",
+          "label": "Enterprise AI Search",
+          "desc": "Glean, Notion AI, ChatGPT Enterprise",
+          "color": "#f59e0b"
+        },
+        {
+          "id": "vec",
+          "label": "Vector DB Ecosystem",
+          "desc": "Pinecone, Weaviate, Qdrant",
+          "color": "#ef4444"
+        }
+      ],
+      "edges": [
+        {
+          "from": "surf",
+          "to": "oss",
+          "label": "Competes"
+        },
+        {
+          "from": "surf",
+          "to": "ent",
+          "label": "Competes"
+        },
+        {
+          "from": "surf",
+          "to": "vec",
+          "label": "Built on"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "title": "Key Differentiation",
+      "subtitle": "How to win",
+      "items": [
+        {
+          "label": "Superior Retrieval",
+          "desc": "Hybrid search + reranking.",
+          "value": null,
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Knowledge Graph Layer",
+          "desc": "Entities and relationships.",
+          "value": null,
+          "color": "#8b5cf6"
+        },
+        {
+          "label": "Multi-Agent Workflows",
+          "desc": "Research and automation agents.",
+          "value": null,
+          "color": "#10b981"
+        },
+        {
+          "label": "Transparency & Trust",
+          "desc": "Explainable retrieval + audit logs.",
+          "value": null,
+          "color": "#f59e0b"
+        }
+      ]
+    },
+    {
+      "type": "comparison",
+      "title": "Strategic Positioning Options",
+      "subtitle": "Choose your primary narrative",
+      "groups": [
+        {
+          "label": "Privacy-First AI Vault",
+          "color": "#3b82f6",
+          "items": [
+            {
+              "label": "Secure internal knowledge",
+              "desc": "Control and compliance focus."
+            },
+            {
+              "label": "Self-hosted friendly",
+              "desc": "Data never leaves org."
+            }
+          ]
+        },
+        {
+          "label": "Developer-First Platform",
+          "color": "#10b981",
+          "items": [
+            {
+              "label": "APIs + extensibility",
+              "desc": "Open integrations and plugins."
+            },
+            {
+              "label": "Composable architecture",
+              "desc": "Build custom workflows."
+            }
+          ]
+        },
+        {
+          "label": "Research Intelligence Engine",
+          "color": "#f59e0b",
+          "items": [
+            {
+              "label": "Deep knowledge mapping",
+              "desc": "Graph-enhanced retrieval."
+            },
+            {
+              "label": "Agent-powered research",
+              "desc": "Automated insights."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sequence",
+      "title": "Roadmap Direction",
+      "subtitle": "Execution focus",
+      "items": [
+        {
+          "label": "Short-Term",
+          "desc": "Speed, UX polish, retrieval quality.",
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Long-Term",
+          "desc": "Knowledge graph, plugins, automation.",
+          "color": "#8b5cf6"
+        }
+      ]
+    },
+    {
+      "type": "outro",
+      "title": "SurfSense",
+      "subtitle": "Build the intelligent knowledge layer"
+    }
+  ]
+}
+
+export const DEMO_VIDEO_INPUT_J: VideoInput = {
+  "scenes": [
+    {
+      "type": "intro",
+      "title": "SurfSense Deep Strategy Recap",
+      "subtitle": "Product, architecture & strategic direction"
+    },
+    {
+      "type": "sequence",
+      "title": "Conversation Journey",
+      "subtitle": "How the strategy evolved",
+      "items": [
+        {
+          "label": "What is SurfSense?",
+          "desc": "AI-powered knowledge assistant.",
+          "color": "#3b82f6"
+        },
+        {
+          "label": "How It Works",
+          "desc": "RAG-based architecture explained.",
+          "color": "#6366f1"
+        },
+        {
+          "label": "Competitor Analysis",
+          "desc": "Market landscape reviewed.",
+          "color": "#8b5cf6"
+        },
+        {
+          "label": "Differentiation Strategy",
+          "desc": "Product + positioning improvements.",
+          "color": "#a855f7"
+        }
+      ]
+    },
+    {
+      "type": "spotlight",
+      "items": [
+        {
+          "category": "info",
+          "title": "Self-Hosted AI Engine",
+          "subtitle": "Core Identity",
+          "desc": "Runs entirely on your infrastructure.",
+          "tag": "Privacy-First",
+          "color": "#0ea5e9"
+        },
+        {
+          "category": "info",
+          "title": "Search Spaces",
+          "subtitle": "Logical Separation",
+          "desc": "Isolated knowledge environments.",
+          "tag": "Organization",
+          "color": "#14b8a6"
+        },
+        {
+          "category": "info",
+          "title": "Grounded Answers",
+          "subtitle": "Data-Backed Responses",
+          "desc": "Outputs cite your own data.",
+          "tag": "Trust",
+          "color": "#22c55e"
+        },
+        {
+          "category": "info",
+          "title": "Advanced RAG",
+          "subtitle": "Retrieval-Augmented Generation",
+          "desc": "Pipeline combining search + LLM.",
+          "tag": "Core Tech",
+          "color": "#f59e0b"
+        }
+      ]
+    },
+    {
+      "type": "sequence",
+      "title": "End-to-End Architecture",
+      "subtitle": "From content to answer",
+      "items": [
+        {
+          "label": "Content Sources",
+          "desc": "PDFs, webpages, connectors.",
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Parsing Layer",
+          "desc": "Structured text extraction.",
+          "color": "#06b6d4"
+        },
+        {
+          "label": "Chunking Strategy",
+          "desc": "Semantic segmentation.",
+          "color": "#10b981"
+        },
+        {
+          "label": "Embedding Model",
+          "desc": "Text → vector encoding.",
+          "color": "#84cc16"
+        },
+        {
+          "label": "Vector Database",
+          "desc": "PostgreSQL + pgvector.",
+          "color": "#f59e0b"
+        },
+        {
+          "label": "Retrieval Layer",
+          "desc": "Similarity search.",
+          "color": "#f97316"
+        },
+        {
+          "label": "LLM Generation",
+          "desc": "Context-aware synthesis.",
+          "color": "#ef4444"
+        }
+      ]
+    },
+    {
+      "type": "hierarchy",
+      "title": "Infrastructure Stack",
+      "items": [
+        {
+          "label": "Docker Deployment",
+          "color": "#111827",
+          "desc": "Containerized setup.",
+          "children": [
+            {
+              "label": "FastAPI Backend",
+              "color": "#3b82f6",
+              "desc": "API orchestration.",
+              "children": null
+            },
+            {
+              "label": "PostgreSQL + pgvector",
+              "color": "#10b981",
+              "desc": "Persistent vectors.",
+              "children": null
+            },
+            {
+              "label": "Redis",
+              "color": "#f59e0b",
+              "desc": "Caching & coordination.",
+              "children": null
+            },
+            {
+              "label": "Celery Workers",
+              "color": "#8b5cf6",
+              "desc": "Background jobs.",
+              "children": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "hierarchy",
+      "title": "Competitive Landscape",
+      "items": [
+        {
+          "label": "RAG Ecosystem",
+          "color": "#1d4ed8",
+          "desc": "Market categories",
+          "children": [
+            {
+              "label": "Open-Source Apps",
+              "color": "#3b82f6",
+              "desc": "AnythingLLM, Danswer",
+              "children": null
+            },
+            {
+              "label": "RAG Frameworks",
+              "color": "#06b6d4",
+              "desc": "Haystack, LlamaIndex",
+              "children": null
+            },
+            {
+              "label": "Enterprise AI Search",
+              "color": "#0ea5e9",
+              "desc": "Glean, Notion AI",
+              "children": null
+            },
+            {
+              "label": "LLM Platforms",
+              "color": "#8b5cf6",
+              "desc": "ChatGPT Enterprise",
+              "children": null
+            },
+            {
+              "label": "Vector DB Providers",
+              "color": "#f59e0b",
+              "desc": "Pinecone, Weaviate, Qdrant",
+              "children": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "spotlight",
+      "items": [
+        {
+          "category": "fact",
+          "statement": "RAG is commoditizing rapidly.",
+          "source": null,
+          "color": "#ef4444"
+        },
+        {
+          "category": "fact",
+          "statement": "Basic Q&A is no longer enough.",
+          "source": null,
+          "color": "#f97316"
+        },
+        {
+          "category": "fact",
+          "statement": "Differentiation is critical.",
+          "source": null,
+          "color": "#eab308"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "title": "Product Improvement Opportunities",
+      "subtitle": "Short-term leverage",
+      "items": [
+        {
+          "label": "Hybrid Search",
+          "desc": "Keyword + vector retrieval.",
+          "value": null,
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Reranking Models",
+          "desc": "Improve relevance scoring.",
+          "value": null,
+          "color": "#06b6d4"
+        },
+        {
+          "label": "Retrieval Transparency",
+          "desc": "Explain chunk selection.",
+          "value": null,
+          "color": "#10b981"
+        },
+        {
+          "label": "Answer Confidence",
+          "desc": "Trust indicators for users.",
+          "value": null,
+          "color": "#f59e0b"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "title": "Strategic Big Bets",
+      "subtitle": "Long-term differentiation",
+      "items": [
+        {
+          "label": "Knowledge Graph Layer",
+          "desc": "Entities + relationships mapping.",
+          "value": null,
+          "color": "#8b5cf6"
+        },
+        {
+          "label": "Cross-Source Insights",
+          "desc": "Connect Slack, docs, emails.",
+          "value": null,
+          "color": "#6366f1"
+        },
+        {
+          "label": "Multi-Agent Workflows",
+          "desc": "Research & automation agents.",
+          "value": null,
+          "color": "#ec4899"
+        },
+        {
+          "label": "Evaluation Dashboard",
+          "desc": "Built-in RAG benchmarking.",
+          "value": null,
+          "color": "#22c55e"
+        }
+      ]
+    },
+    {
+      "type": "comparison",
+      "title": "Positioning Options",
+      "subtitle": "Strategic market angles",
+      "groups": [
+        {
+          "label": "Privacy-First AI Vault",
+          "color": "#0ea5e9",
+          "items": [
+            {
+              "label": "Air-gapped deployments",
+              "desc": "Full infrastructure control."
+            },
+            {
+              "label": "Secure knowledge storage",
+              "desc": "Enterprise-grade privacy."
+            }
+          ]
+        },
+        {
+          "label": "Developer-First Platform",
+          "color": "#8b5cf6",
+          "items": [
+            {
+              "label": "SDK + APIs",
+              "desc": "Extensible integrations."
+            },
+            {
+              "label": "Plugin ecosystem",
+              "desc": "Community-driven growth."
+            }
+          ]
+        },
+        {
+          "label": "Research Intelligence System",
+          "color": "#f59e0b",
+          "items": [
+            {
+              "label": "Citation-heavy outputs",
+              "desc": "Evidence-backed answers."
+            },
+            {
+              "label": "Timeline-aware analysis",
+              "desc": "Historical context tracking."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sequence",
+      "title": "Roadmap Priorities",
+      "subtitle": "Execution focus",
+      "items": [
+        {
+          "label": "Short-Term",
+          "desc": "Speed, UX, retrieval quality.",
+          "color": "#22c55e"
+        },
+        {
+          "label": "Mid-Term",
+          "desc": "Transparency + analytics.",
+          "color": "#3b82f6"
+        },
+        {
+          "label": "Long-Term",
+          "desc": "Knowledge graph + automation.",
+          "color": "#8b5cf6"
+        }
+      ]
+    },
+    {
+      "type": "outro",
+      "title": "SurfSense Strategy",
+      "subtitle": "From RAG tool to intelligence platform"
+    }
+  ]
+}

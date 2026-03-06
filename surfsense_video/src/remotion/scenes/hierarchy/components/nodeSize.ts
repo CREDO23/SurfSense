@@ -21,9 +21,9 @@ const FONT_FAMILY = "Inter, system-ui, sans-serif";
 const BORDER_FACTOR = 0.14;
 
 let _ctx: CanvasRenderingContext2D | null = null;
-function ctx(): CanvasRenderingContext2D {
-  if (!_ctx) {
-    _ctx = document.createElement("canvas").getContext("2d")!;
+function ctx(): CanvasRenderingContext2D | null {
+  if (!_ctx && typeof document !== "undefined") {
+    _ctx = document.createElement("canvas").getContext("2d");
   }
   return _ctx;
 }
@@ -34,11 +34,17 @@ function measureLines(
   fontWeight: number | string,
   availableWidth: number,
 ): number {
-  const c = ctx();
-  c.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
-
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length === 0) return 1;
+
+  const c = ctx();
+  if (!c) {
+    const avgCharWidth = fontSize * 0.55;
+    const textWidth = text.length * avgCharWidth;
+    return Math.max(1, Math.ceil(textWidth / availableWidth));
+  }
+
+  c.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
 
   let lines = 1;
   let lineWidth = 0;

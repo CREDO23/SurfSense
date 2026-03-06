@@ -11,15 +11,15 @@ export interface ComparisonVariant {
   divider: ComparisonDivider;
 }
 
-export function deriveComparisonVariant(seed: number): ComparisonVariant {
+export function deriveComparisonVariant(seed: number, groupCount: number): ComparisonVariant {
   const s = (key: string) => random(`${seed}-${key}`);
   const pick = <T,>(key: string, arr: T[]) =>
     arr[Math.floor(s(key) * arr.length)];
 
   return {
-    layout: pick("layout", [
-      "binary", "table",
-    ] as ComparisonLayout[]),
+    layout: groupCount === 2
+      ? pick("layout", ["binary", "table"] as ComparisonLayout[])
+      : "table",
     cardStyle: pick("cardStyle", [
       "gradient", "glass", "outline", "solid",
     ] as ComparisonCardStyle[]),

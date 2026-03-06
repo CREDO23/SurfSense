@@ -71,7 +71,7 @@ export const ComparisonScene: React.FC<ComparisonSceneProps> = ({
   const titleOffset = input.title ? vmin * 12 : 0;
 
   const { layoutResult, waypoints } = useMemo(() => {
-    const lr = computeComparisonLayout(input, variant.layout, vmin);
+    const lr = computeComparisonLayout(input, variant.layout, vmin, width);
     const wps = buildWaypoints(lr.contentW, lr.contentH, width, height, titleOffset);
     return { layoutResult: lr, waypoints: wps };
   }, [input, variant.layout, vmin, width, height, titleOffset]);

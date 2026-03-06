@@ -122,7 +122,7 @@ export const ListItemCard: React.FC<ListItemProps> = ({
         ...styleCSS,
       }}
     >
-      {(variant.showIndex || item.value !== undefined) && (
+      {(variant.showIndex || item.value != null) && (
         <div
           style={{
             flexShrink: 0,
@@ -132,14 +132,14 @@ export const ListItemCard: React.FC<ListItemProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: item.value !== undefined ? vmin * 2 : vmin * 1.8,
+            fontSize: item.value != null ? vmin * 2 : vmin * 1.8,
             fontWeight: 700,
             fontFamily: "Inter, system-ui, sans-serif",
             boxSizing: "border-box",
             ...badgeCSS,
           }}
         >
-          {item.value !== undefined ? item.value : String(index + 1).padStart(2, "0")}
+          {item.value != null ? item.value : String(index + 1).padStart(2, "0")}
         </div>
       )}
 

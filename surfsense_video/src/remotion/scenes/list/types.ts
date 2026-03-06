@@ -3,17 +3,17 @@ import { z } from "zod";
 
 export const ListItemSchema = z.object({
   label: z.string(),
-  desc: z.string().optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-  color: z.string().optional(),
+  desc: z.string().nullish(),
+  value: z.union([z.string(), z.number()]).nullish(),
+  color: z.string().nullish(),
 });
 
 export type ListItem = z.infer<typeof ListItemSchema>;
 
 export const ListSceneInput = z.object({
   type: z.literal("list"),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string().nullish(),
+  subtitle: z.string().nullish(),
   items: z.array(ListItemSchema).min(1),
 });
 

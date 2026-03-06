@@ -1,8 +1,8 @@
 /**
- * Comparison item dimensions — width/height measured via canvas measureText
+ * Comparison item & header dimensions — measured via canvas measureText
  * so layout can compute positions before React rendering.
  */
-import type { CompareItem } from "../types";
+import type { CompareItem, CompareGroup } from "../types";
 
 export interface ItemDimensions {
   width: number;
@@ -11,6 +11,14 @@ export interface ItemDimensions {
   paddingY: number;
   fontSize: number;
   descFontSize: number;
+}
+
+export interface HeaderDimensions {
+  width: number;
+  height: number;
+  fontSize: number;
+  paddingX: number;
+  paddingY: number;
 }
 
 const LINE_HEIGHT = 1.3;
@@ -52,6 +60,82 @@ function measureLines(
   }
 
   return lines;
+}
+
+/** Measure minimum width needed to display header label without excessive wrapping. */
+function measureHeaderNaturalWidth(
+  label: string,
+  fontSize: number,
+  paddingX: number,
+  borderW: number,
+  maxWidth: number,
+): number {
+  const c = ctx();
+  c.font = `700 ${fontSize}px ${FONT_FAMILY}`;
+  const singleLineW = c.measureText(label).width + 2 * paddingX + 2 * borderW;
+  return Math.min(singleLineW, maxWidth);
+}
+
+export function measureHeaderDimensions(
+  label: string,
+  vmin: number,
+  colW: number,
+): HeaderDimensions {
+  const fontSize = vmin * 2.2;
+  const paddingX = vmin * 2;
+  const paddingY = vmin * 0.6;
+  const borderW = vmin * 0.12;
+  const minHeight = vmin * 5;
+
+  const innerW = colW - 2 * paddingX - 2 * borderW;
+  const labelLines = measureLines(label, fontSize, 700, innerW);
+  const labelH = labelLines * fontSize * LINE_HEIGHT;
+  const height = Math.max(minHeight, labelH + 2 * paddingY + 2 * borderW);
+
+  return { width: colW, height, fontSize, paddingX, paddingY };
+}
+
+/** Compute the best column width for N groups based on content. */
+export function computeColumnWidth(
+  groups: CompareGroup[],
+  vmin: number,
+  viewW: number,
+): number {
+  const fontSize = vmin * 2.2;
+  const paddingX = vmin * 2;
+  const borderW = vmin * 0.12;
+  const colGap = vmin * 3;
+
+  const maxColW = vmin * 36;
+  const minColW = vmin * 20;
+  const availableW = viewW * 0.88;
+  const evenColW = (availableW - (groups.length - 1) * colGap) / groups.length;
+
+  let neededW = minColW;
+  for (const g of groups) {
+    const naturalW = measureHeaderNaturalWidth(label(g), fontSize, paddingX, borderW, maxColW);
+    neededW = Math.max(neededW, naturalW);
+  }
+
+  return Math.max(minColW, Math.min(neededW, evenColW, maxColW));
+}
+
+function label(g: CompareGroup): string {
+  return g.label;
+}
+
+/** Tallest header across all groups for a given column width. */
+export function getMaxHeaderHeight(
+  groups: CompareGroup[],
+  vmin: number,
+  colW: number,
+): number {
+  let maxH = 0;
+  for (const g of groups) {
+    const dims = measureHeaderDimensions(g.label, vmin, colW);
+    maxH = Math.max(maxH, dims.height);
+  }
+  return maxH;
 }
 
 export function getItemDimensions(
