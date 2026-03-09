@@ -25,7 +25,7 @@ if (
   !process.env.REMOTION_AWS_SECRET_ACCESS_KEY
 ) {
   console.log(
-    'The environment variable "REMOTION_REMOTION_AWS_SECRET_ACCESS_KEY" is not set.',
+    'The environment variable "REMOTION_AWS_SECRET_ACCESS_KEY" is not set.',
   );
   console.log("Lambda renders were not set up.");
   console.log(
