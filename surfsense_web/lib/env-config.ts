@@ -45,3 +45,8 @@ export const isSelfHosted = () => DEPLOYMENT_MODE === "self-hosted";
 
 // Helper to check if running in cloud mode
 export const isCloud = () => DEPLOYMENT_MODE === "cloud";
+
+// Whether Remotion Lambda rendering is deployed and available
+// Placeholder: __NEXT_PUBLIC_REMOTION_LAMBDA_ENABLED__
+export const REMOTION_LAMBDA_ENABLED =
+	process.env.NEXT_PUBLIC_REMOTION_LAMBDA_ENABLED === "true";

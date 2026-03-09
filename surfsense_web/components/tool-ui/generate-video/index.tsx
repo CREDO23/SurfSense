@@ -13,9 +13,7 @@ import {
 	type VideoInput,
 	type ProgressResponse,
 } from "@/lib/apis/video-api.service";
-
-// TODO: Set to true once Remotion Lambda is deployed
-const LAMBDA_ENABLED = false;
+import { REMOTION_LAMBDA_ENABLED } from "@/lib/env-config";
 
 type PipelineState =
 	| { step: "idle" }
@@ -156,7 +154,7 @@ function VideoGenerationPipeline({
 				sourceContent,
 			);
 
-			if (!LAMBDA_ENABLED) {
+			if (!REMOTION_LAMBDA_ENABLED) {
 				setState({ step: "script_ready", videoInput });
 				return;
 			}
