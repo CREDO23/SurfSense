@@ -70,6 +70,9 @@ RUN python -c "try:\n    from docling.document_converter import DocumentConverte
 RUN pip install playwright && \
     playwright install chromium --with-deps
 
+# Install Scrapling browser dependencies (fingerprint spoofing, stealth browsers)
+RUN scrapling install
+
 # Copy source code
 COPY . .
 
