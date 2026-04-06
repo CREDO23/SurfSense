@@ -63,9 +63,12 @@ function createQuickAskWindow(x: number, y: number): BrowserWindow {
   });
 
   quickAskWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http://localhost')) {
-      return { action: 'allow' };
-    }
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        return { action: 'allow' };
+      }
+    } catch {}
     shell.openExternal(url);
     return { action: 'deny' };
   });
