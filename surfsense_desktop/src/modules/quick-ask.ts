@@ -81,13 +81,13 @@ function createQuickAskWindow(x: number, y: number): BrowserWindow {
 }
 
 export function registerQuickAsk(): void {
-  const ok = globalShortcut.register(SHORTCUT, () => {
+  const ok = globalShortcut.register(SHORTCUT, async () => {
     if (quickAskWindow && !quickAskWindow.isDestroyed()) {
       destroyQuickAsk();
       return;
     }
 
-    sourceApp = getFrontmostApp();
+    sourceApp = await getFrontmostApp();
     savedClipboard = clipboard.readText();
 
     const text = savedClipboard.trim();
@@ -130,7 +130,7 @@ export function registerQuickAsk(): void {
 
     try {
       await new Promise((r) => setTimeout(r, 50));
-      simulatePaste();
+      await simulatePaste();
       await new Promise((r) => setTimeout(r, 100));
       clipboard.writeText(savedClipboard);
     } catch {

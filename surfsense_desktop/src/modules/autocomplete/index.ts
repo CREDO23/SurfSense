@@ -13,22 +13,22 @@ let savedClipboard = '';
 let sourceApp = '';
 let lastSearchSpaceId: string | null = null;
 
-function isSurfSenseWindow(): boolean {
-  const app = getFrontmostApp();
+async function isSurfSenseWindow(): Promise<boolean> {
+  const app = await getFrontmostApp();
   return app === 'Electron' || app === 'SurfSense' || app === 'surfsense-desktop';
 }
 
 async function triggerAutocomplete(): Promise<void> {
   if (!autocompleteEnabled) return;
-  if (isSurfSenseWindow()) return;
+  if (await isSurfSenseWindow()) return;
 
   if (!hasScreenRecordingPermission()) {
     requestScreenRecording();
     return;
   }
 
-  sourceApp = getFrontmostApp();
-  const windowTitle = getWindowTitle();
+  sourceApp = await getFrontmostApp();
+  const windowTitle = await getWindowTitle();
   savedClipboard = clipboard.readText();
 
   const screenshot = await captureScreen();
@@ -83,7 +83,7 @@ async function acceptAndInject(text: string): Promise<void> {
 
   try {
     await new Promise((r) => setTimeout(r, 50));
-    simulatePaste();
+    await simulatePaste();
     await new Promise((r) => setTimeout(r, 100));
     clipboard.writeText(savedClipboard);
   } catch {
