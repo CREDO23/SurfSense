@@ -1,4 +1,4 @@
-import { app, clipboard, dialog } from 'electron';
+import { app, clipboard, dialog, Notification } from 'electron';
 
 export function showErrorDialog(title: string, error: unknown): void {
   const err = error instanceof Error ? error : new Error(String(error));
@@ -28,6 +28,14 @@ export function registerGlobalErrorHandlers(): void {
   });
 
   process.on('unhandledRejection', (reason) => {
-    showErrorDialog('Unhandled Promise Rejection', reason);
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    console.error('Unhandled Promise Rejection:', err);
+
+    if (app.isReady() && Notification.isSupported()) {
+      new Notification({
+        title: 'SurfSense encountered an error',
+        body: err.message,
+      }).show();
+    }
   });
 }
